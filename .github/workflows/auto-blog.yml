@@ -22,7 +22,7 @@ jobs:
           cd bot
           dotnet run --configuration Release
         env:
-    	  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:

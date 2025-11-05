@@ -45,5 +45,5 @@ exclude:
   - .github/
   - README.md
   - LICENSE
-  - *.sln
-  - *.csproj
+  - "*.sln"
+  - "*.csproj"

@@ -1,3 +1,12 @@
+// ---- Global wrapper ----
+.wrapper {
+  max-width: 720px;
+  margin-left: 0; // align to left
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
 // ---- Header ----
 .site-header {
   background: $background-dark;
@@ -5,50 +14,56 @@
   padding: 1.2rem 0;
 
   .wrapper {
-    max-width: $container-width;
-    margin: 0 auto;
-    padding: 0 $spacing-unit;
     display: flex;
     align-items: center;
-    justify-content: flex-start; // ✅ stick content to the left
-    gap: 1.5rem;
+    justify-content: flex-start;
+    gap: 1.2rem;
+  }
+
+  .avatar {
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    border: 2px solid $border;
   }
 
   .site-title {
     font-weight: 700;
-    font-size: 1.8rem;
+    font-size: 1.6rem;
     color: $text-light;
     margin: 0;
   }
 
-  .feed-link {
-    font-size: 1rem;
-    font-weight: 600;
-    color: $text-light;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 1.2rem;
+    align-items: center;
 
-    &:hover {
-      color: $accent;
+    a {
+      color: $text-light;
+      font-weight: 500;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+
+      &:hover {
+        color: $accent;
+      }
     }
   }
 }
 
-// ---- Avatar ----
-.avatar {
-  border-radius: 50%;
-  display: block;
-  margin-right: 0.75rem;
-  width: 64px;
-  height: 64px;
-  border: 2px solid $border;
+// ---- Posts ----
+.page-content {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }
 
-// ---- Posts ----
 .post-list {
   list-style: none;
   padding-left: 0;
-  margin-top: 2rem;
+  margin: 0;
 
   li {
     margin-bottom: 2rem;
@@ -64,6 +79,10 @@
       font-size: 1.2rem;
       font-weight: 600;
       color: $text-light;
+
+      &:hover {
+        color: $accent;
+      }
     }
 
     p {
@@ -78,32 +97,24 @@
 .site-footer {
   background: $background-dark;
   color: $text-muted;
-  text-align: center;
-  padding: 2rem 0;
-  font-size: 0.9rem;
   border-top: 1px solid $border;
+  padding: 2rem 0;
 
-  strong {
-    color: $text-light;
+  .wrapper {
+    max-width: 720px;
+    margin-left: 0;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    text-align: left; // align with header baseline
   }
 
   p {
     margin: 0.3rem 0;
+    font-size: 0.9rem;
   }
-}
 
-// ---- Page content ----
-.page-content {
-  max-width: 660px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-  text-align: left; // ✅ force post text alignment left
-}
-
-// ---- Wrapper (for global sections) ----
-.wrapper {
-  max-width: $container-width;
-  margin-left: 0; // ✅ stick to left instead of center
-  margin-right: auto;
-  padding: 0 $spacing-unit;
+  strong {
+    color: $text-light;
+  }
 }

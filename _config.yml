@@ -45,7 +45,7 @@ defaults:
       type: "posts"
     values:
       layout: post
-      author: "Elvin Jamalov"
+      author: "Elvin"
       category: dotnet
       tags: [".NET", "C#", "Backend", "Automation"]
 

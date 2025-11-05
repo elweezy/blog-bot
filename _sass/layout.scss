@@ -2,41 +2,34 @@
 .site-header {
   background: $background-dark;
   border-bottom: 1px solid $border;
-  padding: 1.5rem 0 1rem;
+  padding: 1.2rem 0;
 
   .wrapper {
     max-width: $container-width;
     margin: 0 auto;
     padding: 0 $spacing-unit;
-  }
-
-  .header-inner {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    text-align: center;
+    justify-content: flex-start; // ✅ stick content to the left
+    gap: 1.5rem;
   }
 
   .site-title {
     font-weight: 700;
-    font-size: 2rem; // larger
+    font-size: 1.8rem;
     color: $text-light;
-    margin: 0 0 0.3rem 0;
+    margin: 0;
   }
 
-  .site-nav {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.95rem;
-    justify-content: center;
+  .feed-link {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $text-light;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 
-    a {
-      color: $text-light;
-      font-weight: 500;
-
-      &:hover {
-        color: $accent;
-      }
+    &:hover {
+      color: $accent;
     }
   }
 }
@@ -45,9 +38,9 @@
 .avatar {
   border-radius: 50%;
   display: block;
-  margin: 0 auto 0.75rem auto;
-  width: 100px;
-  height: 100px;
+  margin-right: 0.75rem;
+  width: 64px;
+  height: 64px;
   border: 2px solid $border;
 }
 
@@ -55,6 +48,7 @@
 .post-list {
   list-style: none;
   padding-left: 0;
+  margin-top: 2rem;
 
   li {
     margin-bottom: 2rem;
@@ -63,7 +57,7 @@
       display: block;
       color: $text-muted;
       font-size: 0.9rem;
-      margin-bottom: 0.2rem;
+      margin-bottom: 0.3rem;
     }
 
     a {
@@ -98,9 +92,18 @@
   }
 }
 
-// ---- Page layout adjustments ----
+// ---- Page content ----
 .page-content {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+  max-width: 660px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  text-align: left; // ✅ force post text alignment left
+}
+
+// ---- Wrapper (for global sections) ----
+.wrapper {
+  max-width: $container-width;
+  margin-left: 0; // ✅ stick to left instead of center
+  margin-right: auto;
+  padding: 0 $spacing-unit;
 }

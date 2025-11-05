@@ -3,17 +3,7 @@ layout: default
 title: ".NET Blog with Elvin"
 ---
 
-<section class="hero">
-  <p class="eyebrow">Personal .NET Developer Blog</p>
-  <h1>Exploring Modern .NET and C#</h1>
-  <p class="tagline">
-    Insights generated from real-world .NET community trends and automated
-    research.
-  </p>
-</section>
-
 <section class="recent-posts">
-  <h2>Latest Posts</h2>
   <ul class="post-list">
     {% assign posts = paginator.posts | default: site.posts %} {% for post in
     posts limit:10 %}

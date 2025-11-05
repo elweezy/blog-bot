@@ -1,12 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-J18WQBWTE0"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-J18WQBWTE0");
+    </script>
     <meta charset="utf-8" />
-    <title>
-      {% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}
-    </title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="{{ site.description }}" />
+    <meta
+      name="keywords"
+      content=".NET, C#, ASP.NET Core, .NET 8, Blazor, Entity Framework, Web API, backend development, software engineering, cloud computing, GitHub Actions, DevOps, CI/CD, programming tutorials, code examples, software architecture"
+    />
     {% seo %}
     <link rel="stylesheet" href="{{ '/styles.css' | relative_url }}" />
     <link rel="shortcut icon" href="{{ site.baseurl }}/public/favicon.svg" />

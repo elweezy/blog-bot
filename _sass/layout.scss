@@ -2,11 +2,9 @@
 .site-header {
   background: $background-dark;
   border-bottom: 1px solid $border;
-  padding: 1.2rem 0;
+  padding: 1.5rem 0;
 
   .wrapper {
-    display: flex;
-    align-items: center;
     text-align: left; // text left-aligned inside centered column
   }
 
@@ -15,15 +13,11 @@
     width: 56px;
     height: 56px;
     border: 2px solid $border;
-    margin-right: 0.75rem;
-  }
-
-  .title-block {
-    display: flex;
-    flex-direction: column;
+    margin-bottom: 0.75rem;
   }
 
   .site-title {
+    display: block; // one line
     font-weight: 700;
     font-size: 1.8rem;
     color: $text-light;
@@ -31,6 +25,7 @@
   }
 
   .feed-link {
+    display: block; // forces new line under title
     margin-top: 0.35rem;
     color: $text-light; // same color as title
     font-size: 0.95rem;

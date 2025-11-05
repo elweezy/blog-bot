@@ -40,10 +40,12 @@ builder.Services.AddSingleton<IOpenAIClient,GeminiClient>();
 builder.Services.AddSingleton<FileBlogRepository>(sp =>
 {
     var env = sp.GetRequiredService<IHostEnvironment>();
-    var root = env.ContentRootPath; // this is repo root when run from GH Actions
+    
+    var contentRoot = env.ContentRootPath;
+    var repoRoot = Directory.GetParent(contentRoot)?.FullName ?? contentRoot;
 
-    var postsDir = Path.Combine(root, "_posts");
-    var historyPath = Path.Combine(root, "meta", "topics_history.json");
+    var postsDir    = Path.Combine(repoRoot, "_posts");
+    var historyPath = Path.Combine(repoRoot, "meta", "topics_history.json");
 
     return new FileBlogRepository(postsDir, historyPath);
 });

@@ -20,7 +20,7 @@ jobs:
       - name: Run blog bot
         run: |
           cd bot
-          dotnet run --configuration Release
+          dotnet run --configuration Release --project ./bot
         env:
           GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
       - name: Create Pull Request

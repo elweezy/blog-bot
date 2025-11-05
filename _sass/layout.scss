@@ -7,7 +7,7 @@
   .wrapper {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    text-align: left; // text left-aligned inside centered column
   }
 
   .avatar {
@@ -15,6 +15,12 @@
     width: 56px;
     height: 56px;
     border: 2px solid $border;
+    margin-right: 0.75rem;
+  }
+
+  .title-block {
+    display: flex;
+    flex-direction: column;
   }
 
   .site-title {
@@ -24,27 +30,21 @@
     margin: 0;
   }
 
-  .nav-links {
-    margin-left: auto;
-    display: flex;
-    gap: 1.2rem;
-    align-items: center;
+  .feed-link {
+    margin-top: 0.35rem;
+    color: $text-light; // same color as title
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 
-    a {
-      color: $text-light;
-      font-weight: 500;
-      font-size: 0.95rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-
-      &:hover {
-        color: $accent;
-      }
+    &:hover {
+      color: lighten($text-light, 10%);
     }
   }
 }
 
-// ---- Posts ----
+// ---- Main content ----
 .page-content {
   padding: 2rem 0;
 }
@@ -88,6 +88,7 @@
   color: $text-muted;
   border-top: 1px solid $border;
   padding: 2rem 0;
+  text-align: center; // 👈 center footer text
 
   p {
     margin: 0.3rem 0;

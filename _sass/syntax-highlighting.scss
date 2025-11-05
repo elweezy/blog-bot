@@ -1,0 +1,23 @@
+.highlight {
+  background: #f6f8fa;
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+
+  pre {
+    margin: 0;
+  }
+
+  .k {
+    color: #cf222e;
+  } // keyword
+  .s {
+    color: #0a3069;
+  } // string
+  .c {
+    color: #6a737d;
+  } // comment
+  .n {
+    color: #24292e;
+  } // name / identifier
+}

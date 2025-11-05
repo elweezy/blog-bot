@@ -1,31 +1,42 @@
 # ---- Basic site info ----
 title: ".NET Blog with Elvin"
-description: ".NET and C# insights"
-author: "Elvin Dzhamalov"
+description: "Automated .NET and C# insights"
+author: "Elvin Jamalov"
 email: dzhamalov.elvin@gmail.com
-url: "https://elweezy.github.io"
-baseurl: "" # leave empty for user pages, use "/repo-name" for project pages
+url: "https://elweezy.github.io" # main domain
+baseurl: "/blog-bot" # must match repo name for project pages
 timezone: "UTC"
 lang: "en"
 
 # ---- Theme ----
 theme: minima
+
+# Plugins
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-sitemap
+  - jekyll-paginate
 
 # ---- Build options ----
 markdown: kramdown
 highlighter: rouge
-permalink: /:categories/:year/:month/:day/:title/
+
+permalink: /:year/:month/:day/:title/
+
+paginate: 10
+paginate_path: "/page:num/"
+
+# ---- Assets (Sass / CSS pipeline) ----
+sass:
+  sass_dir: _sass
+  style: :compressed
+
 minima:
-  social_links:
-    github: your-github-username
-    linkedin: your-linkedin-username
-  # Optional, you can tweak later:
   skin: classic
-paginate: 5
+  social_links:
+    github: elweezy
+    linkedin: edzhamalov
 
 # ---- Defaults for posts ----
 defaults:
@@ -34,7 +45,7 @@ defaults:
       type: "posts"
     values:
       layout: post
-      author: "Elvin Dzhamalov"
+      author: "Elvin Jamalov"
       category: dotnet
       tags: [".NET", "C#", "Backend", "Automation"]
 

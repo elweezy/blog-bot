@@ -1,0 +1,16 @@
+<header class="site-header">
+  <div class="wrapper header-wrapper">
+    <div class="site-branding">
+      <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+      {% if site.description %}
+      <p class="site-description">{{ site.description }}</p>
+      {% endif %}
+    </div>
+    <nav class="site-nav">
+      <a href="{{ '/' | relative_url }}">Home</a>
+      <a href="{{ '/about/' | relative_url }}">About</a>
+      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+      <a href="https://github.com/elweezy/blog-bot">GitHub</a>
+    </nav>
+  </div>
+</header>

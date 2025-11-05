@@ -1,0 +1,20 @@
+<footer class="site-footer">
+  <div class="wrapper footer-wrapper">
+    <div class="footer-brand">
+      <strong>{{ site.title }}</strong>
+      <span>{{ site.description }}</span>
+    </div>
+    <div class="footer-links">
+      <a href="{{ '/' | relative_url }}">Home</a>
+      <a href="{{ '/about/' | relative_url }}">About</a>
+      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+      <a href="https://github.com/elweezy/blog-bot">GitHub</a>
+    </div>
+    <div class="footer-meta">
+      <span
+        >© {{ site.time | date: '%Y' }} {{ site.author | default: 'Elvin
+        Jamalov' }}. All rights reserved.</span
+      >
+    </div>
+  </div>
+</footer>

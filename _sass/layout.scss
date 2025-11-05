@@ -1,0 +1,94 @@
+// ---- Header ----
+.site-header {
+  background: $header-bg;
+  color: $header-text;
+  padding: 1rem 0;
+
+  .header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: $container-width;
+    margin: 0 auto;
+    padding: 0 $spacing-unit;
+  }
+
+  .site-title {
+    font-weight: 600;
+    font-size: 1.4rem;
+    color: $header-text;
+  }
+
+  .site-nav a {
+    color: $header-text;
+    margin-left: 1rem;
+    font-weight: 500;
+
+    &:hover {
+      color: $primary-color;
+    }
+  }
+}
+
+// ---- Footer ----
+.site-footer {
+  background: $footer-bg;
+  color: $footer-text;
+  padding: 2rem 0;
+  font-size: 0.9rem;
+
+  .footer-wrapper {
+    max-width: $container-width;
+    margin: 0 auto;
+    text-align: center;
+
+    a {
+      color: $primary-color;
+      margin: 0 0.5rem;
+    }
+
+    .footer-meta {
+      margin-top: 1rem;
+      color: $muted-text;
+    }
+  }
+}
+
+// ---- Hero ----
+.hero {
+  text-align: center;
+  margin: 2rem auto;
+
+  .eyebrow {
+    color: $primary-color;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    margin: 0.5rem 0;
+  }
+
+  .tagline {
+    color: $muted-text;
+    font-size: 1.1rem;
+  }
+}
+
+// ---- Posts ----
+.post-list li {
+  margin-bottom: 2rem;
+
+  .post-date {
+    display: block;
+    color: $muted-text;
+    font-size: 0.9rem;
+  }
+
+  a {
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+}

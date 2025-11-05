@@ -1,0 +1,36 @@
+body {
+  font-family: $font-body;
+  background-color: $background-light;
+  color: $text-color;
+  line-height: 1.7;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: color 0.2s;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+code,
+pre {
+  font-family: $font-code;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+pre {
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.wrapper {
+  max-width: $container-width;
+  margin: 0 auto;
+  padding: $spacing-unit;
+}

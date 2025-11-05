@@ -18,7 +18,7 @@ public sealed class MockOpenAiClient : IOpenAIClient
                 Title = c.Title,
                 Description = $"Mock description for '{c.Title}' from {c.Source}.",
                 PrimaryUrl = c.Url,
-                SupportingUrls = new List<string> { c.Url },
+                SupportingUrls = [c.Url],
                 AggregateScore = c.Popularity
             })
             .ToList();

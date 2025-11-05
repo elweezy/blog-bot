@@ -181,18 +181,17 @@ public sealed class TopicDiscoveryService
 
     private async Task<List<TopicCandidate>> FetchRedditAsync(CancellationToken ct)
     {
-        // Reddit listing endpoint: /r/{subreddit}/{listing}.json with limit.:contentReference[oaicite:5]{index=5}
         var subreddit = _options.RedditSubreddit.Trim('/');
         var uri = $"https://www.reddit.com/r/{Uri.EscapeDataString(subreddit)}/hot.json?limit={_options.RedditLimit}";
 
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            // Reddit requires a descriptive User-Agent; set one if not already present.
+
             if (!_httpClient.DefaultRequestHeaders.UserAgent.Any())
             {
                 _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
-                    "blog-bot/1.0 (https://github.com/elweezy/blog-bot)");
+                    "dotnet-blog-bot/1.0 (+https://github.com/elweezy/blog-bot)");
             }
 
             using var response = await _httpClient.SendAsync(request, ct);
@@ -217,7 +216,9 @@ public sealed class TopicDiscoveryService
 
             return children.Select(c =>
             {
-                var created = DateTimeOffset.FromUnixTimeSeconds(c.Data.CreatedUtc).UtcDateTime;
+                // created_utc is a float in JSON, we stored it as double
+                var seconds = (long)Math.Round(c.Data.CreatedUtc);
+                var created = DateTimeOffset.FromUnixTimeSeconds(seconds).UtcDateTime;
                 var url = redditBase + c.Data.Permalink;
 
                 return new TopicCandidate
@@ -236,6 +237,8 @@ public sealed class TopicDiscoveryService
             return new List<TopicCandidate>();
         }
     }
+
+    // Reddit DTOs
 
     private sealed class RedditListingRoot
     {
@@ -260,7 +263,8 @@ public sealed class TopicDiscoveryService
 
         [JsonPropertyName("ups")] public int Ups { get; set; }
 
-        [JsonPropertyName("created_utc")] public long CreatedUtc { get; set; }
+        // 👇 changed from long to double
+        [JsonPropertyName("created_utc")] public double CreatedUtc { get; set; }
     }
 
     #endregion

@@ -31,8 +31,10 @@ builder.Services.AddHttpClient<TopicDiscoveryService>(client =>
         "blog-bot/1.0 (+https://github.com/elweezy/blog-bot)");
 });
 
-// 3. OpenAI client (currently using the mock; swap later with real GPT-5 client)
-builder.Services.AddSingleton<IOpenAIClient, MockOpenAiClient>();
+// 3. OpenAI client (currently using the mock; swap later with openai api client)
+//builder.Services.AddSingleton<IOpenAIClient, MockOpenAiClient>();
+builder.Services.AddHttpClient<GeminiClient>();
+builder.Services.AddSingleton<IOpenAIClient,GeminiClient>();
 
 // 4. FileBlogRepository – using environment to get repo root path
 builder.Services.AddSingleton<FileBlogRepository>(sp =>

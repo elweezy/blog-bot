@@ -47,9 +47,10 @@ pre {
   overflow-x: auto;
 }
 
+/* Center the column, keep text left-aligned */
 .wrapper {
   max-width: $container-width;
-  margin: 0 auto;
+  margin: 0 auto; // 👈 center column
   padding: $spacing-unit;
 }
 

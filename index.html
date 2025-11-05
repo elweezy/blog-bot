@@ -3,20 +3,18 @@ layout: default
 title: ".NET Blog with Elvin"
 ---
 
-<section class="recent-posts">
-  <ul class="post-list">
-    {% assign posts = paginator.posts | default: site.posts %} {% for post in
-    posts limit:10 %}
-    <li>
-      <span class="post-date">{{ post.date | date: "%b %-d, %Y" }}</span>
-      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
-      {% if post.excerpt %}
-      <p>{{ post.excerpt | strip_html | truncate: 140 }}</p>
-      {% endif %}
-    </li>
-    {% endfor %}
-  </ul>
-</section>
+<ul class="post-list">
+  {% assign posts = paginator.posts | default: site.posts %} {% for post in
+  posts limit:10 %}
+  <li>
+    <span class="post-date">{{ post.date | date: "%b %-d, %Y" }}</span>
+    <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+    {% if post.excerpt %}
+    <p>{{ post.excerpt | strip_html | truncate: 140 }}</p>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
 
 {% if paginator and paginator.total_pages > 1 %}
 <nav class="pagination">

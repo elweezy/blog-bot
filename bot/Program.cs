@@ -40,12 +40,19 @@ builder.Services.AddSingleton<IOpenAIClient,GeminiClient>();
 builder.Services.AddSingleton<FileBlogRepository>(sp =>
 {
     var env = sp.GetRequiredService<IHostEnvironment>();
-    
+
     var contentRoot = env.ContentRootPath;
+    Console.WriteLine($"ContentRootPath: {contentRoot}");
+
+    // Go from /.../blog-bot/blog-bot/bot -> /.../blog-bot/blog-bot
     var repoRoot = Directory.GetParent(contentRoot)?.FullName ?? contentRoot;
+    Console.WriteLine($"RepoRoot:        {repoRoot}");
 
     var postsDir    = Path.Combine(repoRoot, "_posts");
     var historyPath = Path.Combine(repoRoot, "meta", "topics_history.json");
+
+    Console.WriteLine($"PostsDir:        {postsDir}");
+    Console.WriteLine($"HistoryPath:     {historyPath}");
 
     return new FileBlogRepository(postsDir, historyPath);
 });

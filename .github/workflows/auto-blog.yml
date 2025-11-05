@@ -19,7 +19,8 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Run blog bot
         run: |
-          dotnet run --configuration Release --project ./bot
+          cd bot
+          dotnet run --configuration Release
         env:
           GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
       - name: Create Pull Request

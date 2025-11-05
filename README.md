@@ -1,2 +1,2 @@
 # blog-bot
-Blog bot for generating personal .net blog content
+Elvin's personal .net blog

@@ -1,6 +1,5 @@
 # ---- Basic site info ----
 title: ".NET Blog with Elvin"
-description: "Automated .NET and C# insights"
 author: "Elvin Jamalov"
 email: dzhamalov.elvin@gmail.com
 url: "https://elweezy.github.io" # main domain
@@ -17,6 +16,7 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
   - jekyll-paginate
+  - jekyll-avatar
 
 # ---- Build options ----
 markdown: kramdown
@@ -33,7 +33,7 @@ sass:
   style: :compressed
 
 minima:
-  skin: classic
+  skin: dark
   social_links:
     github: elweezy
     linkedin: edzhamalov

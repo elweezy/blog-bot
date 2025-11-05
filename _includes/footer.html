@@ -1,20 +1,16 @@
 <footer class="site-footer">
-  <div class="wrapper footer-wrapper">
-    <div class="footer-brand">
-      <strong>{{ site.title }}</strong>
-      <span>{{ site.description }}</span>
-    </div>
-    <div class="footer-links">
-      <a href="{{ '/' | relative_url }}">Home</a>
-      <a href="{{ '/about/' | relative_url }}">About</a>
-      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
-      <a href="https://github.com/elweezy/blog-bot">GitHub</a>
-    </div>
-    <div class="footer-meta">
-      <span
-        >© {{ site.time | date: '%Y' }} {{ site.author | default: 'Elvin
-        Jamalov' }}. All rights reserved.</span
-      >
-    </div>
+  <div class="wrapper">
+    {% avatar elweezy size=100 %}
+    <p>What's up!</p>
+    <p>
+      <strong>I'm {{ site.author }}</strong> — software engineer focused on
+      .NET, C#, and backend development.
+    </p>
+    <p>
+      Feel free to connect with me on
+      <a href="https://www.linkedin.com/in/edzhamalov">LinkedIn</a> or
+      <a href="https://github.com/elweezy">GitHub</a>.
+    </p>
+    <p>© {{ site.time | date: '%Y' }}. All rights reserved.</p>
   </div>
 </footer>

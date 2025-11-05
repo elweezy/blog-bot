@@ -7,8 +7,8 @@ title: ".NET Blog with Elvin"
   {% assign posts = paginator.posts | default: site.posts %} {% for post in
   posts limit:10 %}
   <li>
-    <span class="post-date">{{ post.date | date: "%b %-d, %Y" }}</span>
     <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+    <span class="post-date">{{ post.date | date: "%b %-d, %Y" }}</span>
     {% if post.excerpt %}
     <p>{{ post.excerpt | strip_html | truncate: 140 }}</p>
     {% endif %}

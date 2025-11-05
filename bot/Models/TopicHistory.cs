@@ -12,6 +12,12 @@ public sealed class TopicHistory
         public DateTime UsedAtUtc { get; set; }
     }
 
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true
+    };
+
     public bool IsRecentlyUsed(string topicId, int days)
     {
         var cutoff = DateTime.UtcNow.AddDays(-days);
@@ -20,7 +26,11 @@ public sealed class TopicHistory
 
     public void Add(string topicId)
     {
-        Items.Add(new HistoryItem { TopicId = topicId, UsedAtUtc = DateTime.UtcNow });
+        Items.Add(new HistoryItem
+        {
+            TopicId = topicId,
+            UsedAtUtc = DateTime.UtcNow
+        });
     }
 
     public static TopicHistory Load(string path)
@@ -30,22 +40,44 @@ public sealed class TopicHistory
             return new TopicHistory();
         }
 
-        var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<TopicHistory>(json) ?? new TopicHistory();
+        string text;
+        try
+        {
+            text = File.ReadAllText(path);
+        }
+        catch (IOException ex)
+        {
+            Console.Error.WriteLine($"Warning: failed to read topic history file '{path}': {ex.Message}. Starting fresh.");
+            return new TopicHistory();
+        }
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            // Empty file – treat as no history yet
+            return new TopicHistory();
+        }
+
+        try
+        {
+            var history = JsonSerializer.Deserialize<TopicHistory>(text, JsonOptions);
+            return history ?? new TopicHistory();
+        }
+        catch (JsonException ex)
+        {
+            Console.Error.WriteLine($"Warning: invalid JSON in topic history file '{path}': {ex.Message}. Reinitializing.");
+            return new TopicHistory();
+        }
     }
 
     public void Save(string path)
     {
         var dir = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        if (!string.IsNullOrEmpty(dir))
         {
             Directory.CreateDirectory(dir);
         }
 
-        var json = JsonSerializer.Serialize(this, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
+        var json = JsonSerializer.Serialize(this, JsonOptions);
         File.WriteAllText(path, json);
     }
 }

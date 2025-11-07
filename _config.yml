@@ -1,9 +1,10 @@
 # ---- Basic site info ----
-title: ".NET Blog with Elvin"
+title: "A .NET and backend engineering blog by Elvin"
 author: "Elvin Jamalov"
 email: dzhamalov.elvin@gmail.com
-url: "https://elweezy.github.io" # main domain
-baseurl: "/blog-bot" # must match repo name for project pages
+url: "https://elweezystack.net" # main domain
+baseurl: ""
+tagline: "Pragmatic .NET, backend, and automation notes"
 timezone: "UTC"
 lang: "en"
 

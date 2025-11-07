@@ -11,6 +11,10 @@
     {
       "TopicId": "applying-solid-principles-and-design-patterns-in-modern-csharp-development",
       "UsedAtUtc": "2025-11-06T13:15:27.9047351Z"
+    },
+    {
+      "TopicId": "effective-caching-and-instant-cache-invalidation",
+      "UsedAtUtc": "2025-11-07T13:13:38.6347885Z"
     }
   ]
 }

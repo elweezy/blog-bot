@@ -37,35 +37,42 @@ public sealed class GeminiClient : IOpenAIClient
 
     public async Task<List<Topic>> ClusterTopicsAsync(List<TopicCandidate> candidates, CancellationToken ct = default)
     {
-        if (candidates.Count == 0) return new List<Topic>();
+        if (candidates.Count == 0) return [];
 
         var candidatesJson = JsonSerializer.Serialize(candidates, JsonOptions);
 
-        var prompt = $$"""
-                       You are a senior .NET engineer and active community observer.
+        var prompt = $"""
+                      You are a senior .NET engineer and active community observer.
 
-                       From the following JSON array of recent .NET-related posts, derive exactly 10 distinct, high-value blog topics that would interest professional .NET developers.
+                      From the following JSON array of recent .NET-related posts, identify and generate exactly 10 distinct, high-value blog topics that would interest professional .NET developers.
 
-                       Posts JSON:
-                       {{candidatesJson}}
+                      Posts JSON:
+                      {candidatesJson}
 
-                       ### Task
-                       - Analyze the posts and group them into meaningful .NET-focused topics.
-                       - Each topic must be something a .NET developer could realistically write a full blog post about.
-                       - Prefer modern .NET themes: .NET 8/9, C# 12/13, ASP.NET Core, cloud-native patterns, performance, tooling, source generators, etc.
-                       - Avoid vague or generic titles like “.NET Tips and Tricks”.
+                      ### Task
+                      - Analyze the posts and group them into meaningful, specific, and modern .NET topics.
+                      - Each topic must be something a professional .NET developer could realistically write a full technical blog post about.
+                      - Focus on the latest **stable** .NET release (avoid prerelease or preview features) and relevant areas such as:
+                        - C# language advancements
+                        - ASP.NET Core and minimal APIs
+                        - Cloud-native design and distributed systems
+                        - Performance tuning and memory optimization
+                        - Source generators, analyzers, and compiler features
+                        - Tooling, diagnostics, observability, and developer experience (DX)
+                      - Avoid vague or generic ideas like "Tips and Tricks" or "What's New in .NET" — prefer specific, actionable, and timely subjects.
 
-                       ### Output format (strict)
-                       Respond with exactly 10 lines, each in this format:
+                      ### Output Format (strict)
+                      Respond with exactly 10 lines, each in this format:
 
-                       <title> | <1–2 sentence description>
+                      <title> | <1–2 sentence description>
 
-                       Rules:
-                       - Use one pipe character (`|`) to separate title and description.
-                       - Do not include IDs, JSON, markdown, bullet points, or extra commentary.
-                       - Do not add any text before or after the 10 lines.
-                       Only those 10 lines, nothing else.
-                       """;
+                      ### Rules
+                      - Use one pipe character (`|`) to separate the title and description.
+                      - Do not include IDs, JSON, markdown, numbering, bullet points, or commentary.
+                      - Do not add any text before or after the 10 lines.
+                      - The response must contain only those 10 lines, nothing else.
+                      """;
+
 
         var body = new
         {
@@ -109,38 +116,42 @@ public sealed class GeminiClient : IOpenAIClient
     public async Task<string> GenerateBlogPostAsync(Topic topic, CancellationToken ct = default)
     {
         var topicJson = JsonSerializer.Serialize(topic, JsonOptions);
-        var prompt = $$"""
-                       You are a senior .NET engineer and experienced tech blogger writing for a personal developer audience.
+        var prompt = $"""
+                      You are a seasoned .NET architect and long-time technical blogger writing for an audience of professional developers and software architects.
+                      Write a high-quality, long-form technical blog post for my .NET-focused personal blog based on the following topic:
+                      Topic JSON:
+                      {topicJson}
+                      ### Tone & Voice
+                      - Write like a real engineer who has shipped production systems — confident, conversational, and slightly opinionated.
+                      - Avoid "tutorial voice." Instead, share practical insights, real lessons, and the reasoning behind architectural or design decisions.
+                      - Use natural phrasing and light personal reflection ("I only realized this after chasing a perf issue for hours...").
+                      - Never use filler intros like "In this article..." or "Let's get started." Jump straight into a real-world scenario, problem, or challenge.
+                      - Do **not** reference comments, likes, or user interaction — this blog has no comment section.
 
-                       Write a long-form technical blog post for my .NET blog based on the following topic:
+                      ### Technical Depth
+                      - Assume readers are fluent in modern C# and the **latest stable release** of .NET (avoid prerelease or preview features).
+                      - Include at least one complete, realistic C# code example inside a fenced code block, using triple backticks like this:
+                          ```csharp
+                          // realistic example code
+                          ```
+                        The example should demonstrate production-level patterns such as async streams, dependency injection, logging, minimal APIs, background services, configuration binding, analyzers, or source generators.
+                      - Explain what the code does and why it’s written that way — highlight trade-offs, maintainability, or performance considerations.
+                      - Explain why this topic is relevant now (e.g., runtime improvements, evolving cloud-native practices, modern language features, performance tuning).
+                      - Identify common pitfalls or outdated patterns and show modern alternatives with reasoning.
 
-                       Topic JSON:
-                       {{topicJson}}
+                      ### Structure
+                      - **Hook:** open with a relatable real-world story, debugging case, or architectural decision point.
+                      - **Why it matters:** tie the topic to current .NET ecosystem practices or stable features.
+                      - **Deep dive:** detailed explanation of key concepts, APIs, or design rationale.
+                      - **Code examples:** realistic and production-relevant C# snippets, explained clearly.
+                      - **Pitfalls & best practices:** experience-driven guidance and trade-offs.
+                      - **Conclusion:** finish with a short reflection, takeaway, or next-step suggestion — not a summary.
 
-                       ### Tone & Style
-                       - Sound like a real developer sharing insights with peers — confident, conversational, and slightly opinionated.
-                       - Use natural, human phrasing. It should feel like something I might write myself, not like a generic tutorial.
-                       - Include light personal touches (“I ran into this while building…”, “You might not expect it, but…”), but keep them concise.
-                       - Avoid boilerplate intros like “In this article we will…” — instead, start with a relatable problem, scenario, or question.
-
-                       ### Technical Focus
-                       - Assume readers know C# and modern .NET (8/9).
-                       - Include at least one meaningful C# code sample in a fenced block (```csharp ... ```), using realistic APIs (e.g., minimal APIs, ASP.NET Core endpoints, configuration, logging, background services, source generators, performance tuning, etc.).
-                       - Explain *why this topic matters now* — tie it to current .NET ecosystem trends (performance, cloud-native, DX, new language features).
-                       - Call out common pitfalls, gotchas, or misunderstandings, and show better alternatives.
-
-                       ### Structure
-                       - **Intro:** relatable context or motivation for the topic.
-                       - **Why it matters now:** connect to current .NET practices or releases.
-                       - **Deep dive:** clear explanation of key concepts and mechanics.
-                       - **Code samples:** realistic C# examples with explanation.
-                       - **Pitfalls & best practices:** nuanced guidance and trade-offs.
-                       - **Conclusion:** a short, human reflection or takeaway, maybe a suggestion for what to try next.
-
-                       ### Output
-                       Return only the finished article in valid GitHub-flavored Markdown.
-                       Do not include JSON, metadata, or any explanation outside the post itself.
-                       """;
+                      ### Output Requirements
+                      - Return only the finished article in valid GitHub-flavored Markdown.
+                      - Exclude JSON, metadata, or explanations outside the article itself.
+                      - The post should read like it was written by a senior .NET developer — no generic tone, no repetitive structure, no marketing language.
+                      """;
 
         var body = new
         {
@@ -224,7 +235,7 @@ public sealed class GeminiClient : IOpenAIClient
 
         return result.Take(10).ToList();
     }
-    
+
     private string Slugify(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
@@ -246,7 +257,7 @@ public sealed class GeminiClient : IOpenAIClient
 
         return text;
     }
-    
+
     private double SimilarityScore(string source, string target)
     {
         if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(target))

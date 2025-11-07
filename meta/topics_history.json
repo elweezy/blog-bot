@@ -3,6 +3,18 @@
     {
       "TopicId": "containerizing-net-applications-best-practices-for-docker-and-deployment",
       "UsedAtUtc": "2025-11-05T19:08:17.9102572Z"
+    },
+    {
+      "TopicId": "asyncawait-best-practices-in-net-demystifying-configureawait",
+      "UsedAtUtc": "2025-11-06T00:05:11.0058087Z"
+    },
+    {
+      "TopicId": "applying-solid-principles-and-design-patterns-in-modern-csharp-development",
+      "UsedAtUtc": "2025-11-06T13:15:27.9047351Z"
+    },
+    {
+      "TopicId": "effective-caching-and-instant-cache-invalidation",
+      "UsedAtUtc": "2025-11-07T13:13:38.6347885Z"
     }
   ]
 }

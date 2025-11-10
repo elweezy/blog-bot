@@ -19,6 +19,10 @@
     {
       "TopicId": "strategies-for-dynamic-blazor-ui-updates-without-full-page-reloads",
       "UsedAtUtc": "2025-11-07T14:12:42.5312913Z"
+    },
+    {
+      "TopicId": "building-resilient-net-http-clients-with-ihttpclientfactory-and-polly",
+      "UsedAtUtc": "2025-11-10T21:35:08.7408563Z"
     }
   ]
 }

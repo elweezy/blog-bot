@@ -1,4 +1,4 @@
-name: Auto-generate .NET blog post
+name: Generate blog post
 
 on:
   schedule:

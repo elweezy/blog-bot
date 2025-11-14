@@ -7,7 +7,7 @@ using BlogBot.Models;
 namespace BlogBot.OpenAI;
 
 /// <summary>
-/// Google Gemini client (Gemini 1.5 Pro) – implements IOpenAIClient.
+/// Google Gemini client (Gemini 2.5 flash) – implements IOpenAIClient.
 /// </summary>
 public sealed class GeminiClient : IOpenAIClient
 {

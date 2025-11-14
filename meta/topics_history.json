@@ -31,6 +31,10 @@
     {
       "TopicId": "preparing-for-net-10-and-csharp-14-key-features-for-professional-developers",
       "UsedAtUtc": "2025-11-13T03:23:48.5298005Z"
+    },
+    {
+      "TopicId": "implementing-secure-multi-tenancy-with-global-query-filters-in-net",
+      "UsedAtUtc": "2025-11-14T03:23:20.1889957Z"
     }
   ]
 }

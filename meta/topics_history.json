@@ -35,6 +35,10 @@
     {
       "TopicId": "implementing-secure-multi-tenancy-with-global-query-filters-in-net",
       "UsedAtUtc": "2025-11-14T03:23:20.1889957Z"
+    },
+    {
+      "TopicId": "mastering-net-aspire-for-cloud-native-microservices",
+      "UsedAtUtc": "2025-11-17T03:24:45.1371483Z"
     }
   ]
 }

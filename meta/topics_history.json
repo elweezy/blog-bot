@@ -47,6 +47,10 @@
     {
       "TopicId": "streamlining-http-requests-with-curldotnet-advanced-scenarios-and-integration",
       "UsedAtUtc": "2025-11-19T03:21:53.5067316Z"
+    },
+    {
+      "TopicId": "mastering-polymorphic-json-deserialization-with-systemtextjson",
+      "UsedAtUtc": "2025-11-20T03:20:55.9354215Z"
     }
   ]
 }

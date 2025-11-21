@@ -51,6 +51,10 @@
     {
       "TopicId": "mastering-polymorphic-json-deserialization-with-systemtextjson",
       "UsedAtUtc": "2025-11-20T03:20:55.9354215Z"
+    },
+    {
+      "TopicId": "optimizing-blazor-component-rendering-techniques-for-soft-reloads-and-state-management",
+      "UsedAtUtc": "2025-11-21T03:21:32.0338553Z"
     }
   ]
 }

@@ -59,6 +59,10 @@
     {
       "TopicId": "building-privacy-first-pwas-with-blazor-webassembly-and-on-device-ai-gemini-nano",
       "UsedAtUtc": "2025-11-24T03:29:55.6779102Z"
+    },
+    {
+      "TopicId": "optimizing-linq-queries-and-collections-for-performance-in-net",
+      "UsedAtUtc": "2025-11-25T03:23:43.7263018Z"
     }
   ]
 }

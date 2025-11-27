@@ -63,6 +63,10 @@
     {
       "TopicId": "optimizing-linq-queries-and-collections-for-performance-in-net",
       "UsedAtUtc": "2025-11-25T03:23:43.7263018Z"
+    },
+    {
+      "TopicId": "beyond-the-basics-advanced-entity-framework-core-strategies-for-performance-and-complex-queries",
+      "UsedAtUtc": "2025-11-26T03:29:44.4351134Z"
     }
   ]
 }

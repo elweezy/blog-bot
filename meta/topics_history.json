@@ -79,6 +79,10 @@
     {
       "TopicId": "advanced-ef-core-query-optimization-implementing-smart-field-selection",
       "UsedAtUtc": "2025-12-17T03:33:27.5685328Z"
+    },
+    {
+      "TopicId": "building-resilient-api-clients-in-net-advanced-httpclient-usage-and-error-handling",
+      "UsedAtUtc": "2025-12-24T03:35:07.9294523Z"
     }
   ]
 }

@@ -83,6 +83,10 @@
     {
       "TopicId": "building-resilient-api-clients-in-net-advanced-httpclient-usage-and-error-handling",
       "UsedAtUtc": "2025-12-24T03:35:07.9294523Z"
+    },
+    {
+      "TopicId": "seamless-integration-connecting-modern-net-8-applications-with-legacy-as400-systems",
+      "UsedAtUtc": "2025-12-31T03:35:47.9208191Z"
     }
   ]
 }

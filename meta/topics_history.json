@@ -87,6 +87,10 @@
     {
       "TopicId": "seamless-integration-connecting-modern-net-8-applications-with-legacy-as400-systems",
       "UsedAtUtc": "2025-12-31T03:35:47.9208191Z"
+    },
+    {
+      "TopicId": "architecting-cloud-native-net-applications-with-distributed-persistence-and-job-queues",
+      "UsedAtUtc": "2026-01-07T03:36:38.8061838Z"
     }
   ]
 }

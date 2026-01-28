@@ -99,6 +99,10 @@
     {
       "TopicId": "leveraging-f-for-domain-specific-languages-dsls-in-net-solutions",
       "UsedAtUtc": "2026-01-21T03:37:40.273207Z"
+    },
+    {
+      "TopicId": "advanced-csharp-generics-implementing-crtp-for-robust-library-design",
+      "UsedAtUtc": "2026-01-28T03:37:50.5805979Z"
     }
   ]
 }

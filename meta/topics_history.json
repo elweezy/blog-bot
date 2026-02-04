@@ -103,6 +103,10 @@
     {
       "TopicId": "advanced-csharp-generics-implementing-crtp-for-robust-library-design",
       "UsedAtUtc": "2026-01-28T03:37:50.5805979Z"
+    },
+    {
+      "TopicId": "high-performance-backend-scripting-and-runtime-code-generation-in-net",
+      "UsedAtUtc": "2026-02-04T03:51:14.3157452Z"
     }
   ]
 }

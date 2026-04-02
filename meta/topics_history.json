@@ -127,6 +127,10 @@
     {
       "TopicId": "modern-csharp-type-system-choosing-the-right-type-struct-record-class",
       "UsedAtUtc": "2026-03-11T03:50:37.6917076Z"
+    },
+    {
+      "TopicId": "dependency-injection-a-modern-approach-to-architectural-flexibility-in-net",
+      "UsedAtUtc": "2026-04-01T04:07:25.990592Z"
     }
   ]
 }

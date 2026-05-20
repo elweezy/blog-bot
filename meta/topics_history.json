@@ -147,6 +147,10 @@
     {
       "TopicId": "securing-cloud-native-net-aspire-applications-with-production-grade-entra-id-authentication",
       "UsedAtUtc": "2026-05-13T04:24:02.6738753Z"
+    },
+    {
+      "TopicId": "extending-ef-core-lifecycle-hooks-named-filters-and-domain-events",
+      "UsedAtUtc": "2026-05-20T04:31:20.6081978Z"
     }
   ]
 }

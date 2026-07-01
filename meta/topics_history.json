@@ -159,6 +159,10 @@
     {
       "TopicId": "implementing-robust-authentication-and-authorization-in-aspnet-core",
       "UsedAtUtc": "2026-06-24T04:30:15.1300768Z"
+    },
+    {
+      "TopicId": "architecting-cloud-native-net-applications-on-azure-patterns-and-practices",
+      "UsedAtUtc": "2026-07-01T04:36:32.703401Z"
     }
   ]
 }

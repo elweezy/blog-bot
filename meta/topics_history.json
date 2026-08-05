@@ -167,6 +167,10 @@
     {
       "TopicId": "optimizing-database-pagination-in-net-with-keyset-pagination",
       "UsedAtUtc": "2026-07-08T04:06:12.8172939Z"
+    },
+    {
+      "TopicId": "mastering-net-performance-deep-dive-into-memory-optimization-and-custom-hashing",
+      "UsedAtUtc": "2026-08-05T05:48:12.6050267Z"
     }
   ]
 }

@@ -171,6 +171,10 @@
     {
       "TopicId": "mastering-net-performance-deep-dive-into-memory-optimization-and-custom-hashing",
       "UsedAtUtc": "2026-08-05T05:48:12.6050267Z"
+    },
+    {
+      "TopicId": "advanced-diagnostics-profiling-and-performance-tuning-for-net-applications",
+      "UsedAtUtc": "2026-09-02T07:43:36.7923031Z"
     }
   ]
 }

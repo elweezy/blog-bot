@@ -175,6 +175,10 @@
     {
       "TopicId": "advanced-diagnostics-profiling-and-performance-tuning-for-net-applications",
       "UsedAtUtc": "2026-09-02T07:43:36.7923031Z"
+    },
+    {
+      "TopicId": "documenting-architectural-decisions-adrs-in-net-projects-for-enhanced-maintainability",
+      "UsedAtUtc": "2026-09-23T08:22:27.3965608Z"
     }
   ]
 }

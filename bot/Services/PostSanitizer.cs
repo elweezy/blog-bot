@@ -97,6 +97,7 @@ public sealed partial class PostSanitizer
             text = string.Join('\n', lines.Skip(1)).TrimStart();
 
         text = LimitEmDashes(text);
+        text = StripHtmlAndLinks(text);
         return text.Trim() + "\n";
     }
 
@@ -184,6 +185,9 @@ public sealed partial class PostSanitizer
         return result;
     }
 
+    /// <summary>Number of checkable figures (a number with a unit or currency) in the text.</summary>
+    public static int CountFigures(string text) => MetricClaim().Count(text);
+
     private static IEnumerable<string> Figures(Match claim)
     {
         var unit = UnitOf(claim.Value);
@@ -199,7 +203,7 @@ public sealed partial class PostSanitizer
         {
             "percent" => "%",
             "milliseconds" or "millisecond" => "ms",
-            "seconds" or "second" or "secs" or "sec" => "s",
+            "seconds" or "second" or "secs" or "sec" or "s" => "s",
             "minutes" or "minute" => "min",
             "hours" or "hour" => "h",
             "×" => "x",
@@ -250,6 +254,43 @@ public sealed partial class PostSanitizer
         return sb.ToString().TrimEnd('\n');
     }
 
+    /// <summary>
+    /// Post text is generated from untrusted web content, and kramdown renders raw HTML as-is. Outside code, remove
+    /// HTML tags and turn Markdown links into plain text (sources are listed separately), so a prompt-injected
+    /// script or link can't reach the site.
+    /// </summary>
+    public static string StripHtmlAndLinks(string markdown)
+    {
+        var sb = new StringBuilder();
+        var inFence = false;
+
+        foreach (var line in markdown.Split('\n'))
+        {
+            if (line.TrimStart().StartsWith("```")) inFence = !inFence;
+            if (inFence || line.TrimStart().StartsWith("```"))
+            {
+                sb.Append(line).Append('\n');
+                continue;
+            }
+
+            // Leave inline code spans alone; clean only the text between them.
+            var cleanLine = ScriptOrStyleBlock().Replace(line, "");
+            var parts = InlineCode().Split(cleanLine);
+            var spans = InlineCode().Matches(cleanLine);
+            for (var i = 0; i < parts.Length; i++)
+            {
+                var part = MarkdownLink().Replace(parts[i], "$1");
+                part = HtmlTag().Replace(part, "");
+                sb.Append(part);
+                if (i < spans.Count) sb.Append(spans[i].Value);
+            }
+
+            sb.Append('\n');
+        }
+
+        return sb.ToString().TrimEnd('\n');
+    }
+
     private static Regex Rx(string pattern) => new(pattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     [GeneratedRegex(@"^```(?:markdown|md)?\s*\n(.*)\n```$", RegexOptions.Singleline)]
@@ -268,7 +309,7 @@ public sealed partial class PostSanitizer
     private static partial Regex Sentences();
 
     // A figure with a unit or currency, optionally as a range: "$0.30", "2 to 5 seconds", "200-400 ms", "96.9%", "10x".
-    [GeneratedRegex(@"(\$\s?\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\$?\d[\d,]*(\.\d+)?)?(\s?(million|billion|k|m|bn)\b)?)|(\b\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\d[\d,]*(\.\d+)?)?\s?(%|percent\b|ms\b|milliseconds?\b|seconds?\b|secs?\b|minutes?\b|hours?\b|x\b|×|times (faster|cheaper|slower|more|less)|million\b|billion\b|[kmb] tokens\b|tokens\b|requests\b|rps\b|qps\b|gb\b|mb\b|tb\b|cents?\b|dollars?\b))", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(\$\s?\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\$?\d[\d,]*(\.\d+)?)?(\s?(million|billion|k|m|bn)\b)?)|(\b\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\d[\d,]*(\.\d+)?)?\s?(%|percent\b|ms\b|milliseconds?\b|seconds?\b|secs?\b|minutes?\b|hours?\b|x\b|×|times (faster|cheaper|slower|more|less)|million\b|billion\b|[kmb] tokens\b|tokens\b|requests\b|rps\b|qps\b|gb\b|mb\b|kb\b|tb\b|s\b|fps\b|-d\b|cents?\b|dollars?\b))", RegexOptions.IgnoreCase)]
     private static partial Regex MetricClaim();
 
     [GeneratedRegex(@"\d[\d,]*(\.\d+)?")]
@@ -282,6 +323,21 @@ public sealed partial class PostSanitizer
 
     [GeneratedRegex(@"\bI(['’]d|['’]m| think| would| wouldn['’]t| prefer| suspect| expect| doubt| believe| bet| lean| want)\b")]
     private static partial Regex FirstPersonOpinion();
+
+    [GeneratedRegex(@"`[^`\n]*`")]
+    private static partial Regex InlineCode();
+
+    // [text](url) and ![alt](url), allowing one level of parentheses inside the URL.
+    [GeneratedRegex(@"!?\[([^\]\n]*)\]\((?:[^()\n]|\([^()\n]*\))*\)")]
+    private static partial Regex MarkdownLink();
+
+    // Script and style elements go with their contents, not just their tags.
+    [GeneratedRegex(@"<(script|style)\b[^>]*>.*?</\1\s*>", RegexOptions.IgnoreCase)]
+    private static partial Regex ScriptOrStyleBlock();
+
+    // Real tags and autolinks (<script>, </div>, <img ...>, <!-- -->, <https://...>), not "a < b" comparisons.
+    [GeneratedRegex(@"<(/?[a-zA-Z][a-zA-Z0-9-]*(\s[^<>]*)?/?|!--.*?--|https?://[^>\s]+)>", RegexOptions.Singleline)]
+    private static partial Regex HtmlTag();
 
     [GeneratedRegex(@"\s*—\s*")]
     private static partial Regex EmDash();

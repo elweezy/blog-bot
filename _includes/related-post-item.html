@@ -1,4 +1,4 @@
 <li>
-  <a href="{{ include.post.url | relative_url }}">{{ include.post.title }}</a>
-  <span class="meta"><time datetime="{{ include.post.date | date_to_xmlschema }}">{{ include.post.date | date: "%b %-d, %Y" }}</time>{% if include.post.tags.size > 0 %} · {{ include.post.tags | slice: 0, 2 | join: ", " }}{% endif %}</span>
+  <a href="{{ include.post.url | relative_url }}">{{ include.post.title | escape }}</a>
+  <span class="meta"><time datetime="{{ include.post.date | date_to_xmlschema }}">{{ include.post.date | date: "%b %-d, %Y" }}</time>{% if include.post.tags.size > 0 %} · {{ include.post.tags | slice: 0, 2 | join: ", " | escape }}{% endif %}</span>
 </li>

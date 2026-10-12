@@ -5,15 +5,15 @@ layout: default
 <div class="post-layout">
 <article class="post">
   <header class="post-header">
-    <h1>{{ page.title }}</h1>
-    {% if page.description %}<p class="lede">{{ page.description }}</p>{% endif %}
+    <h1>{{ page.title | escape }}</h1>
+    {% if page.description %}<p class="lede">{{ page.description | escape }}</p>{% endif %}
     <div class="meta">
       <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
       <span aria-hidden="true">·</span>
       <span>{% include reading-time.html content=content %}</span>
       {% if page.tags.size > 0 %}
       <ul class="tag-list" aria-label="Tags">
-        {% for tag in page.tags %}<li><a href="{{ '/tags/' | relative_url }}#{{ tag | slugify }}">{{ tag }}</a></li>{% endfor %}
+        {% for tag in page.tags %}<li><a href="{{ '/tags/' | relative_url }}#{{ tag | slugify }}">{{ tag | escape }}</a></li>{% endfor %}
       </ul>
       {% endif %}
     </div>
@@ -26,7 +26,7 @@ layout: default
     <section>
       <h2>Sources</h2>
       <ol>
-        {% for url in page.sources %}<li><a href="{{ url }}" rel="noopener">{{ url | remove_first: "https://" | remove_first: "www." | truncate: 80 }}</a></li>{% endfor %}
+        {% for url in page.sources %}{% assign scheme = url | slice: 0, 8 | downcase %}{% if scheme == "https://" or scheme contains "http://" %}<li><a href="{{ url | escape }}" rel="noopener nofollow">{{ url | remove_first: "https://" | remove_first: "www." | truncate: 80 | escape }}</a></li>{% endif %}{% endfor %}
       </ol>
     </section>
     {% endif %}
@@ -44,10 +44,10 @@ layout: default
     {% if page.previous or page.next %}
     <nav class="post-nav" aria-label="More posts">
       {% if page.previous %}
-      <a class="prev" href="{{ page.previous.url | relative_url }}"><span>← Older</span><strong>{{ page.previous.title }}</strong></a>
+      <a class="prev" href="{{ page.previous.url | relative_url }}"><span>← Older</span><strong>{{ page.previous.title | escape }}</strong></a>
       {% endif %}
       {% if page.next %}
-      <a class="next" href="{{ page.next.url | relative_url }}"><span>Newer →</span><strong>{{ page.next.title }}</strong></a>
+      <a class="next" href="{{ page.next.url | relative_url }}"><span>Newer →</span><strong>{{ page.next.title | escape }}</strong></a>
       {% endif %}
     </nav>
     {% endif %}

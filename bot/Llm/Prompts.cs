@@ -30,6 +30,14 @@ public static class Prompts
           in the sources, do not invent one; reason qualitatively instead. Attribute claims: "the authors report...",
           "one Hacker News commenter pointed out...".
         - Don't call something new, popular or trending unless the sources say so.
+        - Credit experiments, benchmarks and projects to the people who ran or built them: "the benchspec author
+          measured...", "in their write-up, the changelog-bot author...". Never phrase it so it sounds like the blog's
+          author ran them.
+        - Only claim comparisons the sources actually make. If the sources compare two small models, don't conclude
+          anything about large models. You may add your own view on a wider question, but say plainly that it's your
+          opinion and that the sources didn't test it.
+        - Every price, latency, percentage, multiplier or count must come from the sources. The only exception is a
+          sentence that states an explicit assumption ("Assume 20k requests a day...").
         """;
 
     private static string Voice => $"""
@@ -38,6 +46,8 @@ public static class Prompts
           No scene-setting, no question to the reader, no "In this post", no "Imagine...".
         - Mix short and long sentences. Some paragraphs are a single sentence. Use contractions.
         - Take a position and defend it with trade-offs. Say so when the popular approach is wrong or overkill.
+        - Use the first person for opinions at least two or three times ("I'd start with...", "I think...",
+          "I'm not convinced..."). This is what makes the post read like a person wrote it.
         - Plain words: "use" not "leverage", "fast" not "performant", "solid" or nothing instead of "robust".
         - Never use: {string.Join(", ", PostSanitizer.BannedPhraseLabels)}.
         - At most two em dashes in the whole post; prefer commas, periods or parentheses. No emoji.
@@ -171,7 +181,8 @@ public static class Prompts
         - be grounded in 1 to 3 of the items above (by index) that give real material to write from;
         - be about practical AI engineering: LLM apps, agents and tool use, RAG and retrieval, evals, inference cost and
           latency, open-weight and local models, fine-tuning, AI inside backend systems, developer tooling;
-        - make a specific, arguable point engineers disagree about. Bad: "The Future of AI Agents". Good: "A single
+        - make a specific, arguable point engineers disagree about, and one the cited items actually support. Don't
+          turn "the source compared A and B" into a claim about C. Bad: "The Future of AI Agents". Good: "A single
           tool-calling loop beats a multi-agent setup for most internal tools";
         - skip AI policy, funding, company drama, career advice, release hype without engineering substance, and
           research results with no practical consequence.

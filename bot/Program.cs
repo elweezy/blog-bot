@@ -73,6 +73,7 @@ if (result is { Path: not null } created && !string.IsNullOrEmpty(githubOutput))
     await File.AppendAllTextAsync(githubOutput,
         $"post_title={created.Topic.Title.Replace('\n', ' ')}\n" +
         $"post_path={Path.GetRelativePath(Path.GetDirectoryName(Path.GetDirectoryName(created.Path)!)!, created.Path)}\n" +
+        $"post_slug={Path.GetFileNameWithoutExtension(created.Path)}\n" +
         $"post_description<<{delimiter}\n{created.Post.Description}\n{delimiter}\n");
 }
 

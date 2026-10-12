@@ -100,10 +100,29 @@ public sealed partial class PostSanitizer
         return text.Trim() + "\n";
     }
 
-    public List<Issue> FindIssues(string markdown)
+    /// <param name="sourceMaterial">When given, every metric in the post (prices, latencies, percentages, sizes) must appear in it.</param>
+    public List<Issue> FindIssues(string markdown, string? sourceMaterial = null)
     {
         var issues = new List<Issue>();
         var prose = ProseOnly(markdown);
+
+        if (sourceMaterial is not null)
+        {
+            foreach (var claim in UnsupportedNumbers(prose, sourceMaterial))
+            {
+                issues.Add(new Issue(
+                    $"The figure \"{claim}\" does not appear in the sources. Remove it, replace it with a figure the " +
+                    "sources state, or describe it qualitatively. Numbers are only allowed without a source inside an " +
+                    "explicit assumption (\"Assume ...\").",
+                    Blocking: true));
+            }
+        }
+
+        if (FirstPersonOpinion().Matches(prose).Count < 2)
+            issues.Add(new Issue(
+                "Almost no first-person opinion. Add two or three places where the author takes a clear position " +
+                "(\"I'd ...\", \"I think ...\", \"I'm not convinced ...\"), without inventing any experience.",
+                Blocking: false));
 
         foreach (var sentence in Sentences().Split(prose))
         {
@@ -139,6 +158,64 @@ public sealed partial class PostSanitizer
     public static List<Match> MermaidBlocks(string markdown) => MermaidBlock().Matches(markdown).ToList();
 
     public static string ProseOnly(string markdown) => FencedBlock().Replace(markdown, " ");
+
+    /// <summary>
+    /// Metric-like figures in the prose (money, latency, percentages, token counts, multipliers) whose numbers are not
+    /// in the source text. Sentences that state an explicit assumption are exempt.
+    /// </summary>
+    public static List<string> UnsupportedNumbers(string prose, string sourceMaterial)
+    {
+        // "number|unit" pairs the sources state, e.g. "0.3|$", "261|ms", "96.9|%".
+        var sourceFigures = MetricClaim().Matches(sourceMaterial).SelectMany(Figures).ToHashSet();
+        var result = new List<string>();
+
+        foreach (var sentence in Sentences().Split(prose))
+        {
+            if (Assumption().IsMatch(sentence)) continue;
+
+            foreach (Match claim in MetricClaim().Matches(sentence))
+            {
+                if (Figures(claim).All(sourceFigures.Contains)) continue;
+                if (!result.Contains(claim.Value.Trim()))
+                    result.Add(claim.Value.Trim());
+            }
+        }
+
+        return result;
+    }
+
+    private static IEnumerable<string> Figures(Match claim)
+    {
+        var unit = UnitOf(claim.Value);
+        return NumberToken().Matches(claim.Value).Select(m => NormalizeNumber(m.Value) + "|" + unit);
+    }
+
+    private static string UnitOf(string claim)
+    {
+        if (claim.Contains('$')) return "$";
+
+        var unit = TrailingUnit().Match(claim).Value.Trim().ToLowerInvariant();
+        return unit switch
+        {
+            "percent" => "%",
+            "milliseconds" or "millisecond" => "ms",
+            "seconds" or "second" or "secs" or "sec" => "s",
+            "minutes" or "minute" => "min",
+            "hours" or "hour" => "h",
+            "×" => "x",
+            "cent" or "cents" => "cents",
+            "dollar" or "dollars" => "$",
+            _ when unit.StartsWith("times") => "x",
+            _ => unit.TrimEnd('s')
+        };
+    }
+
+    private static string NormalizeNumber(string value)
+    {
+        var n = value.Replace(",", "");
+        if (n.Contains('.')) n = n.TrimEnd('0').TrimEnd('.');
+        return n;
+    }
 
     private bool IsBackedByProfile(string sentence)
     {
@@ -189,6 +266,22 @@ public sealed partial class PostSanitizer
 
     [GeneratedRegex(@"(?<=[.!?])\s+|\n+")]
     private static partial Regex Sentences();
+
+    // A figure with a unit or currency, optionally as a range: "$0.30", "2 to 5 seconds", "200-400 ms", "96.9%", "10x".
+    [GeneratedRegex(@"(\$\s?\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\$?\d[\d,]*(\.\d+)?)?(\s?(million|billion|k|m|bn)\b)?)|(\b\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\d[\d,]*(\.\d+)?)?\s?(%|percent\b|ms\b|milliseconds?\b|seconds?\b|secs?\b|minutes?\b|hours?\b|x\b|×|times (faster|cheaper|slower|more|less)|million\b|billion\b|[kmb] tokens\b|tokens\b|requests\b|rps\b|qps\b|gb\b|mb\b|tb\b|cents?\b|dollars?\b))", RegexOptions.IgnoreCase)]
+    private static partial Regex MetricClaim();
+
+    [GeneratedRegex(@"\d[\d,]*(\.\d+)?")]
+    private static partial Regex NumberToken();
+
+    [GeneratedRegex(@"[^\d\s,.\-–]+[a-z ]*$", RegexOptions.IgnoreCase)]
+    private static partial Regex TrailingUnit();
+
+    [GeneratedRegex(@"\b(assume|assuming|assumption|suppose|say we|imagine|for example, a|hypothetical)", RegexOptions.IgnoreCase)]
+    private static partial Regex Assumption();
+
+    [GeneratedRegex(@"\bI(['’]d|['’]m| think| would| wouldn['’]t| prefer| suspect| expect| doubt| believe| bet| lean| want)\b")]
+    private static partial Regex FirstPersonOpinion();
 
     [GeneratedRegex(@"\s*—\s*")]
     private static partial Regex EmDash();

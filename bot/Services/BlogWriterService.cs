@@ -7,9 +7,9 @@ namespace BlogBot.Services;
 
 public sealed class BlogWriterService
 {
-    private const int MaxSourceCharsPerItem = 6000;
+    private const int MaxSourceCharsPerItem = 15000;
     private const int MaxExcludedTitlesInPrompt = 80;
-    private const int MaxEditAttempts = 2;
+    private const int MaxEditAttempts = 3;
 
     private readonly TopicDiscoveryService _discovery;
     private readonly ILlmClient _llm;
@@ -67,7 +67,7 @@ public sealed class BlogWriterService
         post.Markdown = await ValidateDiagramsAsync(post.Markdown, ct);
 
         // Removing an unfixable diagram can leave the post without its required structure.
-        var finalIssues = sanitizer.FindIssues(post.Markdown).Where(i => i.Blocking).ToList();
+        var finalIssues = sanitizer.FindIssues(post.Markdown, sourceMaterial).Where(i => i.Blocking).ToList();
         if (finalIssues.Count > 0)
             throw new InvalidOperationException(
                 "Post lost required structure after diagram validation, not publishing it:\n" +
@@ -167,7 +167,7 @@ public sealed class BlogWriterService
         CancellationToken ct)
     {
         var draft = sanitizer.Clean(await _llm.WriteDraftAsync(topic, sourceMaterial, authorProfile, ct));
-        var issues = sanitizer.FindIssues(draft);
+        var issues = sanitizer.FindIssues(draft, sourceMaterial);
         LogIssues("Draft", issues);
 
         var current = draft;
@@ -177,7 +177,7 @@ public sealed class BlogWriterService
                 issues.Select(i => i.Message).ToList(), ct);
             post.Markdown = sanitizer.Clean(post.Markdown);
 
-            issues = sanitizer.FindIssues(post.Markdown);
+            issues = sanitizer.FindIssues(post.Markdown, sourceMaterial);
             LogIssues($"Edit {attempt}", issues);
 
             if (!issues.Any(i => i.Blocking))

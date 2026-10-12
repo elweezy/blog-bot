@@ -30,7 +30,8 @@ public interface ILlmClient
         CancellationToken ct = default);
 
     /// <summary>
-    /// Checks each claim strictly against its evidence using the given model. Every input id gets a verdict.
+    /// Checks each claim strictly against its evidence using the given model. The model may skip items; only the
+    /// verdicts it actually gave are returned.
     /// </summary>
     Task<List<ClaimVerdict>> VerifyClaimsAsync(IReadOnlyList<ClaimCheck> claims, string model, CancellationToken ct = default);
 

@@ -21,7 +21,18 @@ public static partial class Citations
     /// ("... second [[S1: "..."]]."), so every marker belongs to the sentence it supports.
     /// </summary>
     public static string FixPlacement(string markdown) =>
-        MarkerAfterPunctuation().Replace(markdown, m => $" {m.Groups[2].Value.Trim()}{m.Groups[1].Value}");
+        MarkerAfterPunctuation().Replace(SplitMultiQuote(markdown), m => $" {m.Groups[2].Value.Trim()}{m.Groups[1].Value}");
+
+    /// <summary>
+    /// Models sometimes put several quotes in one marker: [[S1: "a", "b"]]. Split it into [[S1: "a"]] [[S1: "b"]].
+    /// </summary>
+    private static string SplitMultiQuote(string markdown) =>
+        MultiQuoteMarker().Replace(markdown, m =>
+        {
+            var source = m.Groups[1].Value;
+            var quotes = QuotedString().Matches(m.Groups[2].Value).Select(q => q.Groups[1].Value);
+            return string.Join(" ", quotes.Select(q => $"[[S{source}: \"{q}\"]]"));
+        });
 
     /// <summary>Replaces markers with placeholders so text cleanup can't alter the quoted words.</summary>
     public static string Protect(string markdown, List<string> saved) =>
@@ -176,6 +187,12 @@ public static partial class Citations
             }
         }
     }
+
+    [GeneratedRegex("""\[\[S(\d+):\s*((?:"[^"\n]*"\s*,\s*)+"[^"\n]*")\s*\]\]""")]
+    private static partial Regex MultiQuoteMarker();
+
+    [GeneratedRegex("\"([^\"\n]*)\"")]
+    private static partial Regex QuotedString();
 
     // [[S1: "quoted text"]]; quotes may contain anything except the closing sequence.
     [GeneratedRegex("""\[\[S(\d+):\s*"(.*?)"\s*\]\]""", RegexOptions.Singleline)]

@@ -144,6 +144,37 @@ public sealed class GeminiClient : ILlmClient
             ct);
     }
 
+    public Task<List<ClaimVerdict>> VerifyClaimsAsync(IReadOnlyList<ClaimCheck> claims, string model, CancellationToken ct = default)
+    {
+        var schema = new
+        {
+            type = "ARRAY",
+            items = new
+            {
+                type = "OBJECT",
+                properties = new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "INTEGER" },
+                    ["supported"] = new { type = "BOOLEAN" },
+                    ["reason"] = new { type = "STRING" }
+                },
+                required = new[] { "id", "supported", "reason" }
+            }
+        };
+
+        var payload = JsonSerializer.Serialize(claims.Select(c => new { id = c.Id, kind = c.Kind, text = c.Text, evidence = c.Evidence }));
+
+        // Only this one model: two different models each give an independent verdict.
+        return CallAsync(Prompts.VerifierSystem, Prompts.VerifierUser(payload), schema, json =>
+        {
+            var verdicts = JsonSerializer.Deserialize<List<ClaimVerdict>>(json, JsonOptions) ?? [];
+            var missing = claims.Select(c => c.Id).Except(verdicts.Select(v => v.Id)).ToList();
+            if (missing.Count > 0)
+                throw new JsonException($"Verifier skipped claims {string.Join(", ", missing)}.");
+            return verdicts;
+        }, ct, [model]);
+    }
+
     public async Task<string> FixDiagramAsync(string diagram, string error, CancellationToken ct = default)
     {
         var fixedDiagram = await CallAsync(Prompts.FixDiagramSystem, Prompts.FixDiagramUser(diagram, error), schema: null, text => text, ct);
@@ -155,7 +186,8 @@ public sealed class GeminiClient : ILlmClient
     /// truncated output, JSON that doesn't parse) counts as a failed attempt, so it is retried and then falls through
     /// to the next model.
     /// </summary>
-    private async Task<T> CallAsync<T>(string system, string user, object? schema, Func<string, T> parse, CancellationToken ct)
+    private async Task<T> CallAsync<T>(string system, string user, object? schema, Func<string, T> parse, CancellationToken ct,
+        IReadOnlyList<string>? models = null)
     {
         var body = new
         {
@@ -168,7 +200,7 @@ public sealed class GeminiClient : ILlmClient
         var payload = JsonSerializer.Serialize(body, JsonOptions);
 
         var failures = new List<string>();
-        foreach (var model in _models)
+        foreach (var model in models ?? _models)
         {
             for (var attempt = 1; attempt <= MaxAttemptsPerModel; attempt++)
             {

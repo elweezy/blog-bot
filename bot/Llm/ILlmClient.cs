@@ -30,6 +30,11 @@ public interface ILlmClient
         CancellationToken ct = default);
 
     /// <summary>
+    /// Checks each claim strictly against its evidence using the given model. Every input id gets a verdict.
+    /// </summary>
+    Task<List<ClaimVerdict>> VerifyClaimsAsync(IReadOnlyList<ClaimCheck> claims, string model, CancellationToken ct = default);
+
+    /// <summary>
     /// Fixes a Mermaid diagram that failed to render. Returns the corrected diagram source.
     /// </summary>
     Task<string> FixDiagramAsync(string diagram, string error, CancellationToken ct = default);

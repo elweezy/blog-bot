@@ -79,4 +79,7 @@ jobs:
 
             > ${{ steps.bot.outputs.post_description }}
 
+            **Fact-check:** ${{ steps.bot.outputs.post_checks }}. Every factual sentence was matched to an exact quote
+            from its source and checked by two models; anything that failed was removed before this PR was opened.
+
             Merge this before the next run if you can. Unmerged posts are still counted, so they won't be written again.

@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using BlogBot.Llm;
 using BlogBot.Models;
 using BlogBot.Repository;
@@ -14,12 +15,33 @@ public sealed class BlogWriterService
     // Below this much fetched text the writer would be working from the title alone, so the topic is skipped.
     private const int MinSourceChars = 1500;
 
+    // Publishing without review: a post needs enough verified claims, and if the fact-checkers reject more than
+    // this share of them, the draft is too unreliable to publish even after pruning.
+    private const int MinCitedClaims = 6;
+    private const double MaxRejectedShare = 0.25;
+
+    private const int TeaserId = -1;
+    private const int DiagramIdBase = 10_000;
+
+    /// <summary>One-line result of the fact-check for the PR description, e.g. "11/12 cited sentences verified ...".</summary>
+    public string VerificationSummary { get; private set; } = string.Empty;
+
+    private sealed record SourceSet(
+        string Material,
+        IReadOnlyDictionary<int, string> Texts,
+        IReadOnlyDictionary<int, (string Title, string Url)> Links);
+
     private readonly TopicDiscoveryService _discovery;
     private readonly ILlmClient _llm;
     private readonly FileBlogRepository _blogRepo;
     private readonly MermaidValidator _mermaid;
     private readonly bool _dryRun = Environment.GetEnvironmentVariable("DRY_RUN") == "1";
     private readonly bool _requireMermaidValidation = Environment.GetEnvironmentVariable("REQUIRE_MERMAID_VALIDATION") == "1";
+
+    // Two different models check claims independently; a claim survives only if both accept it.
+    private readonly string[] _verifierModels =
+        (Environment.GetEnvironmentVariable("GEMINI_VERIFIER_MODELS") is { Length: > 0 } v ? v : "gemini-3.8-flash,gemini-2.5-flash")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
     public BlogWriterService(
         TopicDiscoveryService discovery,
@@ -61,11 +83,11 @@ public sealed class BlogWriterService
 
         // Take the best topic whose sources actually have enough text to write from.
         Topic? chosen = null;
-        var sourceMaterial = string.Empty;
+        SourceSet? sources = null;
         foreach (var topic in ranked)
         {
-            sourceMaterial = await BuildSourceMaterialAsync(topic, ct);
-            var textLength = sourceMaterial.Length - topic.Sources.Take(3).Sum(s => s.Title.Length + s.Source.Length + 10);
+            sources = await BuildSourcesAsync(topic, ct);
+            var textLength = sources.Texts.Values.Sum(t => t.Length);
             if (textLength >= MinSourceChars)
             {
                 chosen = topic;
@@ -75,7 +97,7 @@ public sealed class BlogWriterService
             Console.WriteLine($"  skipped: {topic.Title} (only {textLength} characters of source text)");
         }
 
-        if (chosen is null)
+        if (chosen is null || sources is null)
         {
             Console.WriteLine("No new topic has enough source material. Skipping this run.");
             return null;
@@ -83,21 +105,32 @@ public sealed class BlogWriterService
 
         Console.WriteLine($"Chosen topic: {chosen.Title}");
         Console.WriteLine($"Angle:        {chosen.Angle}");
-        Console.WriteLine($"Source text:  {sourceMaterial.Length} characters");
+        Console.WriteLine($"Source text:  {sources.Material.Length} characters");
         var authorProfile = _blogRepo.LoadAuthorProfile();
         var sanitizer = new PostSanitizer(ExtractSection(authorProfile, "Real experiences"));
 
-        var post = await WriteAndEditAsync(chosen, sourceMaterial, authorProfile, sanitizer, ct);
+        var post = await WriteAndEditAsync(chosen, sources, authorProfile, sanitizer, ct);
         post.Markdown = await ValidateDiagramsAsync(post.Markdown, ct);
 
-        // Removing an unfixable diagram can leave the post without its required structure.
-        var finalIssues = sanitizer.FindIssues(post.Markdown, sourceMaterial)
-            .Concat(PostSanitizer.FindTeaserIssues(post.Description, sourceMaterial))
-            .Where(i => i.Blocking).ToList();
+        // Posts are published without human review: every claim is checked against its quote by two models.
+        var verified = await VerifyAndPruneAsync(post, sources, ct);
+        if (verified is null)
+        {
+            Console.WriteLine("The fact-check rejected too much of this draft. Not publishing anything this run.");
+            return null;
+        }
+
+        // Pruning can remove a diagram or section; the post must still be complete.
+        var finalIssues = CheckPost(verified, sources, sanitizer).Where(i => i.Blocking).ToList();
         if (finalIssues.Count > 0)
-            throw new InvalidOperationException(
-                "Post lost required structure after diagram validation, not publishing it:\n" +
-                string.Join("\n", finalIssues.Select(i => "- " + i.Message)));
+        {
+            Console.WriteLine("Post is incomplete after fact-check pruning. Not publishing anything this run:");
+            foreach (var issue in finalIssues) Console.WriteLine("  - " + issue.Message);
+            return null;
+        }
+
+        post = verified;
+        post.Markdown = Citations.RenderFootnotes(post.Markdown, sources.Links);
 
         if (_dryRun)
         {
@@ -170,31 +203,177 @@ public sealed class BlogWriterService
         return null;
     }
 
-    private async Task<string> BuildSourceMaterialAsync(Topic topic, CancellationToken ct)
+    private async Task<SourceSet> BuildSourcesAsync(Topic topic, CancellationToken ct)
     {
-        var sources = topic.Sources.Take(3).ToList();
-        var texts = await Task.WhenAll(sources.Select(s => _discovery.FetchSourceTextAsync(s, MaxSourceCharsPerItem, ct)));
+        var picked = topic.Sources.Take(3).ToList();
+        var texts = await Task.WhenAll(picked.Select(s => _discovery.FetchSourceTextAsync(s, MaxSourceCharsPerItem, ct)));
 
         var sb = new StringBuilder();
-        for (var i = 0; i < sources.Count; i++)
+        var byLabel = new Dictionary<int, string>();
+        var links = new Dictionary<int, (string Title, string Url)>();
+        for (var i = 0; i < picked.Count; i++)
         {
-            sb.AppendLine($"[{i + 1}] {sources[i].Source}: {sources[i].Title}");
+            var label = i + 1;
+            byLabel[label] = texts[i];
+            links[label] = (picked[i].Title, picked[i].Url);
+            sb.AppendLine($"[S{label}] {picked[i].Source}: {picked[i].Title}");
             sb.AppendLine(texts[i]);
             sb.AppendLine();
         }
 
-        return sb.ToString();
+        return new SourceSet(sb.ToString(), byLabel, links);
     }
+
+    /// <summary>
+    /// Everything the deterministic checks can find: invented experience, structure, style, unsupported figures in
+    /// the body and teaser, quotes that don't exist in their source, and too few citations.
+    /// </summary>
+    private static List<PostSanitizer.Issue> CheckPost(GeneratedPost post, SourceSet sources, PostSanitizer sanitizer)
+    {
+        var issues = sanitizer.FindIssues(post.Markdown, sources.Material);
+        issues.AddRange(PostSanitizer.FindTeaserIssues(post.Description, sources.Material));
+        issues.AddRange(CitationIssues(post.Markdown, sources));
+        return issues;
+    }
+
+    private static IEnumerable<PostSanitizer.Issue> CitationIssues(string markdown, SourceSet sources)
+    {
+        foreach (var quote in Citations.InvalidQuotes(markdown, sources.Texts))
+            yield return new PostSanitizer.Issue(
+                $"The citation {quote} quotes words that are not in that source. Copy the exact words from the " +
+                "source, cite the right source label, or delete the sentence.",
+                Blocking: true);
+
+        var claims = Citations.ExtractClaims(markdown).Count;
+        if (claims < MinCitedClaims)
+            yield return new PostSanitizer.Issue(
+                $"Only {claims} sentences carry a citation marker; at least {MinCitedClaims} are needed. Every " +
+                "sentence that states a fact from the sources must end with [[S<n>: \"exact quote\"]].",
+                Blocking: true);
+    }
+
+    /// <summary>
+    /// Sends every cited sentence, every diagram outside the Draft design, and the teaser to each verifier model.
+    /// Anything a verifier rejects is removed. Returns null when too much was rejected to trust the rest.
+    /// </summary>
+    private async Task<GeneratedPost?> VerifyAndPruneAsync(GeneratedPost post, SourceSet sources, CancellationToken ct)
+    {
+        var markdown = post.Markdown;
+        var claims = Citations.ExtractClaims(markdown);
+        var checks = claims.Select(c => new ClaimCheck(c.Id, "sentence", c.Text, Evidence(c.Quotes, sources))).ToList();
+
+        var draftDesignAt = Regex.Match(markdown, @"^#{2,3}\s+.*draft design", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+        var diagrams = PostSanitizer.MermaidBlocks(markdown)
+            .Where(b => !draftDesignAt.Success || b.Index < draftDesignAt.Index) // the Draft design is the writer's own proposal
+            .ToList();
+        for (var i = 0; i < diagrams.Count; i++)
+        {
+            var caption = CaptionAfter(markdown, diagrams[i]);
+            var sectionQuotes = Citations.QuotesIn(SectionAround(markdown, diagrams[i].Index));
+            checks.Add(new ClaimCheck(DiagramIdBase + i, "diagram",
+                $"{diagrams[i].Groups[1].Value}\nCaption: {Citations.StripMarkers(caption)}",
+                Evidence(Citations.QuotesIn(caption).Concat(sectionQuotes).ToList(), sources)));
+        }
+
+        var allQuotes = claims.SelectMany(c => c.Quotes).ToList();
+        checks.Add(new ClaimCheck(TeaserId, "teaser", post.Description, Evidence(allQuotes, sources)));
+
+        var rejected = new Dictionary<int, string>();
+        foreach (var model in _verifierModels)
+        {
+            var verdicts = await _llm.VerifyClaimsAsync(checks, model, ct);
+            foreach (var verdict in verdicts.Where(v => !v.Supported))
+                rejected.TryAdd(verdict.Id, $"{model}: {verdict.Reason}");
+        }
+
+        var rejectedClaims = claims.Where(c => rejected.ContainsKey(c.Id)).ToList();
+        VerificationSummary =
+            $"{claims.Count - rejectedClaims.Count}/{claims.Count} cited sentences verified by {string.Join(" and ", _verifierModels)}, " +
+            $"{diagrams.Count(d => !rejected.ContainsKey(DiagramIdBase + diagrams.IndexOf(d)))}/{diagrams.Count} diagrams kept, " +
+            $"teaser {(rejected.ContainsKey(TeaserId) ? "rebuilt from verified sentences" : "verified")}";
+        Console.WriteLine($"Fact-check: {VerificationSummary}.");
+        foreach (var (id, reason) in rejected)
+        {
+            var what = id == TeaserId ? "teaser" : id >= DiagramIdBase ? $"diagram {id - DiagramIdBase + 1}" : claims[id].Text;
+            Console.WriteLine($"  rejected: {Truncate(what, 160)}\n    because {Truncate(reason, 200)}");
+        }
+
+        if (claims.Count < MinCitedClaims || rejectedClaims.Count > claims.Count * MaxRejectedShare)
+            return null;
+
+        // Remove rejected diagrams back to front so earlier positions stay valid, then rejected sentences.
+        for (var i = diagrams.Count - 1; i >= 0; i--)
+            if (rejected.ContainsKey(DiagramIdBase + i))
+                markdown = RemoveDiagram(markdown, diagrams[i]);
+        markdown = Citations.RemoveClaims(markdown, rejectedClaims);
+
+        var description = rejected.ContainsKey(TeaserId) ? FallbackTeaser(markdown) : post.Description;
+        return new GeneratedPost { Markdown = markdown, Description = description, Tags = post.Tags };
+    }
+
+    /// <summary>
+    /// For each quote, the surrounding passage in its source, so the verifier sees the context a figure belongs to.
+    /// </summary>
+    private static List<string> Evidence(IEnumerable<Citations.Quote> quotes, SourceSet sources)
+    {
+        var evidence = new List<string>();
+        foreach (var quote in quotes.DistinctBy(q => (q.Source, q.Text)).Take(40))
+        {
+            if (!sources.Texts.TryGetValue(quote.Source, out var text)) continue;
+
+            var flat = Regex.Replace(text, @"\s+", " ");
+            var at = flat.IndexOf(Regex.Replace(quote.Text, @"\s+", " "), StringComparison.OrdinalIgnoreCase);
+            var passage = at < 0
+                ? quote.Text
+                : flat[Math.Max(0, at - 300)..Math.Min(flat.Length, at + quote.Text.Length + 300)];
+            evidence.Add($"S{quote.Source} ({sources.Links[quote.Source].Title}): ...{passage}...");
+        }
+
+        return evidence;
+    }
+
+    // A teaser built only from sentences that passed the fact-check.
+    private static string FallbackTeaser(string markdown)
+    {
+        var sentences = Citations.ExtractClaims(markdown).Select(c => c.Text.TrimStart('-', '*', ' ')).Take(2);
+        var teaser = string.Join(" ", sentences);
+        return teaser.Length <= 300 ? teaser : teaser[..teaser.LastIndexOf(' ', 297)] + "...";
+    }
+
+    private static string CaptionAfter(string markdown, Match block)
+    {
+        var caption = Regex.Match(markdown[(block.Index + block.Length)..], @"^\s*\n(\*Figure[^\n]*\*)[ \t]*(?=\n|$)");
+        return caption.Success ? caption.Groups[1].Value : string.Empty;
+    }
+
+    private static string SectionAround(string markdown, int index)
+    {
+        var start = markdown.LastIndexOf("\n## ", Math.Min(index, markdown.Length - 1), StringComparison.Ordinal);
+        var end = markdown.IndexOf("\n## ", index, StringComparison.Ordinal);
+        return markdown[(start < 0 ? 0 : start)..(end < 0 ? markdown.Length : end)];
+    }
+
+    private static string RemoveDiagram(string markdown, Match block)
+    {
+        var end = block.Index + block.Length;
+        var caption = Regex.Match(markdown[end..], @"^\s*\n\*Figure[^\n]*\*[ \t]*(?=\n|$)");
+        if (caption.Success) end += caption.Length;
+        return markdown.Remove(block.Index, end - block.Index);
+    }
+
+    private static string Truncate(string text, int max) => text.Length <= max ? text : text[..max] + "...";
 
     private async Task<GeneratedPost> WriteAndEditAsync(
         Topic topic,
-        string sourceMaterial,
+        SourceSet sources,
         string? authorProfile,
         PostSanitizer sanitizer,
         CancellationToken ct)
     {
+        var sourceMaterial = sources.Material;
         var draft = sanitizer.Clean(await _llm.WriteDraftAsync(topic, sourceMaterial, authorProfile, ct));
         var issues = sanitizer.FindIssues(draft, sourceMaterial);
+        issues.AddRange(CitationIssues(draft, sources));
         LogIssues("Draft", issues);
 
         var current = draft;
@@ -205,8 +384,7 @@ public sealed class BlogWriterService
                 issues.Select(i => i.Message).ToList(), ct);
             post.Markdown = sanitizer.Clean(post.Markdown);
 
-            issues = sanitizer.FindIssues(post.Markdown, sourceMaterial);
-            issues.AddRange(PostSanitizer.FindTeaserIssues(post.Description, sourceMaterial));
+            issues = CheckPost(post, sources, sanitizer);
             LogIssues($"Edit {attempt}", issues);
 
             if (!issues.Any(i => i.Blocking))
@@ -262,14 +440,10 @@ public sealed class BlogWriterService
             }
 
             Console.WriteLine("Repair failed; removing the diagram and its caption.");
-            var end = block.Index + block.Length;
-            var rest = markdown[end..];
-            var caption = System.Text.RegularExpressions.Regex.Match(rest, @"^\s*\n\*Figure:[^\n]*\*[ \t]*(?=\n|$)");
-            if (caption.Success) end += caption.Length;
-            markdown = markdown.Remove(block.Index, end - block.Index);
+            markdown = RemoveDiagram(markdown, block);
         }
 
-        return System.Text.RegularExpressions.Regex.Replace(markdown, @"\n{3,}", "\n\n");
+        return Regex.Replace(markdown, @"\n{3,}", "\n\n");
     }
 
     private static void LogIssues(string stage, List<PostSanitizer.Issue> issues)

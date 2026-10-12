@@ -72,21 +72,39 @@ public sealed class FileBlogRepository
         if (tags.Count > 0)
             sb.Append($"tags: [{string.Join(", ", tags.Select(Yaml))}]\n");
 
-        var sources = topic.Sources.Count > 0
-            ? topic.Sources.SelectMany(s => new[] { s.Url, s.DiscussionUrl })
-            : topic.SupportingUrls;
-        var sourceList = sources.OfType<string>().Where(IsHttpUrl).Distinct().ToList();
-        if (sourceList.Count > 0)
+        // Titles are written in a parallel list so the page can show "Article title" instead of a raw URL,
+        // while older tooling that reads plain "sources" URLs keeps working.
+        var sources = (topic.Sources.Count > 0
+                ? topic.Sources.SelectMany(s => new[]
+                {
+                    (Title: s.Title, Url: s.Url),
+                    (Title: DiscussionTitle(s), Url: s.DiscussionUrl ?? string.Empty)
+                })
+                : topic.SupportingUrls.Select(u => (Title: string.Empty, Url: u)))
+            .Where(s => IsHttpUrl(s.Url))
+            .DistinctBy(s => s.Url)
+            .ToList();
+        if (sources.Count > 0)
         {
             sb.Append("sources:\n");
-            foreach (var url in sourceList)
-                sb.Append($"  - {Yaml(url)}\n");
+            foreach (var source in sources)
+                sb.Append($"  - {Yaml(source.Url)}\n");
+            sb.Append("source_titles:\n");
+            foreach (var source in sources)
+                sb.Append($"  - {Yaml(source.Title)}\n");
         }
 
         sb.Append("---\n\n");
         sb.Append(post.Markdown.Trim()).Append('\n');
         return sb.ToString();
     }
+
+    private static string DiscussionTitle(TopicCandidate source) => source.Source switch
+    {
+        "hackernews" => $"Hacker News discussion: {source.Title}",
+        "reddit" => $"Reddit discussion: {source.Title}",
+        _ => $"Discussion: {source.Title}"
+    };
 
     private static bool IsHttpUrl(string url) =>
         Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);

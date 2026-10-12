@@ -6,7 +6,8 @@ namespace BlogBot.Services;
 /// <summary>
 /// Claim-level grounding. The writer ends every factual sentence with a marker carrying the exact source text it
 /// relies on: <c>[[S1: "exact words from source 1"]]</c>. This class checks that each quote really exists in its
-/// source, extracts claims for verification, deletes claims that fail, and finally turns markers into footnotes.
+/// source, extracts claims for verification, and deletes claims that fail. Markers are stripped before publishing;
+/// attribution stays in the prose and the sources are listed under the post.
 /// </summary>
 public static partial class Citations
 {
@@ -77,6 +78,25 @@ public static partial class Citations
     }
 
     /// <summary>
+    /// Prose sentences and list items without any citation (headings, captions, tables and code excluded), so the
+    /// fact-checkers can confirm they are opinion or reasoning rather than unsupported facts.
+    /// </summary>
+    public static List<Claim> ExtractUncited(string markdown, int firstId)
+    {
+        var result = new List<Claim>();
+        foreach (var unit in Units(markdown).Where(u => !u.InCode))
+        {
+            var text = unit.Text.Trim();
+            if (text.Length < 25 || text.StartsWith('#') || text.StartsWith('|') || text.StartsWith('*') ||
+                QuotesIn(unit.Text).Count > 0)
+                continue;
+            result.Add(new Claim(firstId + result.Count, text, []));
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Removes the units whose stripped text matches a rejected claim. Paragraphs, lists and tables keep their shape.
     /// </summary>
     public static string RemoveClaims(string markdown, IReadOnlyCollection<Claim> rejected)
@@ -101,37 +121,6 @@ public static partial class Citations
         var text = Regex.Replace(sb.ToString(), @"^[ \t]*([-*]|\d+\.)[ \t]*$\n?", "", RegexOptions.Multiline);
         return Regex.Replace(text, @"\n{3,}", "\n\n").Trim() + "\n";
     }
-
-    /// <summary>
-    /// Replaces markers with kramdown footnote references and appends one footnote per cited source.
-    /// </summary>
-    public static string RenderFootnotes(string markdown, IReadOnlyDictionary<int, (string Title, string Url)> sources)
-    {
-        var used = new SortedSet<int>();
-        var text = MarkerWithSpace().Replace(markdown, m =>
-        {
-            var source = int.Parse(m.Groups[1].Value);
-            if (!sources.ContainsKey(source)) return "";
-            used.Add(source);
-            return $"[^s{source}]";
-        });
-
-        // Several markers on one sentence become one reference per source.
-        text = RepeatedFootnote().Replace(text, "$1");
-
-        if (used.Count == 0) return text;
-
-        var sb = new StringBuilder(text.TrimEnd()).Append("\n\n");
-        foreach (var source in used)
-        {
-            var (title, url) = sources[source];
-            sb.Append($"[^s{source}]: {EscapeMarkdown(title)}, <{url}>\n");
-        }
-
-        return sb.ToString();
-    }
-
-    private static string EscapeMarkdown(string text) => Regex.Replace(text, @"([\[\]\\*_`<>])", @"\$1");
 
     public static string Normalize(string text)
     {
@@ -198,9 +187,6 @@ public static partial class Citations
     // "word. [[S1: "..."]] [[S2: "..."]]" -> punctuation, then one or more markers
     [GeneratedRegex("""([.!?])((?:\s*\[\[S\d+:\s*".*?"\s*\]\])+)""", RegexOptions.Singleline)]
     private static partial Regex MarkerAfterPunctuation();
-
-    [GeneratedRegex(@"(\[\^s\d+\])(?:\1)+")]
-    private static partial Regex RepeatedFootnote();
 
     [GeneratedRegex(@"^\s*([-*+]|\d+\.)\s")]
     private static partial Regex ListItem();

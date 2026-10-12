@@ -35,6 +35,11 @@ public interface ILlmClient
     Task<List<ClaimVerdict>> VerifyClaimsAsync(IReadOnlyList<ClaimCheck> claims, string model, CancellationToken ct = default);
 
     /// <summary>
+    /// Writes a 2-3 sentence teaser using only facts from the given verified sentences.
+    /// </summary>
+    Task<string> RewriteTeaserAsync(IReadOnlyList<string> verifiedSentences, CancellationToken ct = default);
+
+    /// <summary>
     /// Fixes a Mermaid diagram that failed to render. Returns the corrected diagram source.
     /// </summary>
     Task<string> FixDiagramAsync(string diagram, string error, CancellationToken ct = default);

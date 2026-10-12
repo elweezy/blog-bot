@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Architecting Cloud-Native .NET Applications with Distributed Persistence and Job Queues"
 date: 2026-01-07 03:36:38 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/tatted_dev/announcing-honeydrunkdata-a-multi-tenant-persistence-layer-for-distributed-net-applications-4mp5"
+sources:
+  - "https://dev.to/tatted_dev/announcing-honeydrunkdata-a-multi-tenant-persistence-layer-for-distributed-net-applications-4mp5"
+tags: ["cloud-native", "architecture", "data"]
 ---
 
 Building robust cloud-native applications in .NET demands a sophisticated approach to data management and background processing. A simple monolithic `DbContext` and ad-hoc `Task.Run` calls might suffice for a prototype, but they quickly buckle under the demands of distributed systems, multi-tenancy, and high concurrency. The real test comes when you need predictable performance, fault tolerance, and a clear separation of concerns across a fleet of microservices running in Docker containers.

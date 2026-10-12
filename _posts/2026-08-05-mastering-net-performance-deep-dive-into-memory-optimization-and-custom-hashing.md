@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Mastering .NET Performance: Deep Dive into Memory Optimization and Custom Hashing"
 date: 2026-08-05 05:48:12 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/saddamhossaindotnet/building-smart-meal-planner-an-ai-powered-meal-planning-tool-with-aspnet-core-and-net-10-2nm7"
+sources:
+  - "https://dev.to/saddamhossaindotnet/building-smart-meal-planner-an-ai-powered-meal-planning-tool-with-aspnet-core-and-net-10-2nm7"
+tags: ["csharp", "performance"]
 ---
 
 We've all faced that frustrating moment when an otherwise well-designed application starts showing inexplicable latency spikes or memory bloat under load. Often, the culprit isn't a single catastrophic bug, but rather a slow, insidious accumulation of micro-allocations and inefficient data lookups in performance-critical paths. It's in these moments, when profiling tools like DotMemory or PerfView highlight `System.String` allocations or high CPU cycles spent in `Dictionary.TryGetValue`, that the true cost of unoptimized memory management and default hashing strategies becomes glaringly apparent.

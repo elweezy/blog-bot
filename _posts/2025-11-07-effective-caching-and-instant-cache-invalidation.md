@@ -5,6 +5,7 @@ date: 2025-11-07 13:13:38 +0000
 categories: dotnet blog
 sources:
   - "https://dev.to/karnafun/building-an-oauth2-protected-api-with-c-identityserver-and-aspnet-core-23g2"
+tags: ["caching", "performance", "dotnet"]
 ---
 
 You know the drill. You're building a sleek .NET API, and everything's humming along, fast and responsive. Then, naturally, you hit the database or an external service one too many times. "Ah-ha!" you exclaim, "Caching to the rescue!" You sprinkle some `IMemoryCache` magic, and suddenly your endpoints are blazing fast. Life is good.

@@ -1,12 +1,14 @@
-﻿---
+---
 layout: post
 title: "Architecting Cloud-Native .NET Applications on Azure: Patterns and Practices"
 date: 2026-07-01 04:36:32 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/hossein_esmati/service-communication-patterns-in-net-core-and-azure-nhi"
+sources:
+  - "https://dev.to/hossein_esmati/service-communication-patterns-in-net-core-and-azure-nhi"
+tags: ["cloud-native", "architecture"]
 ---
 
-We've all been there: staring at a distributed system's call graph, debugging a cascading failure that started with a simple HTTP request timing out. The promise of microservices – independent deployments, clear ownership, bounded contexts – often collides head-on with the realities of inter-service communication and the seductive convenience of shared code. Architecting cloud-native .NET applications on Azure forces us to confront these tensions head-on, particularly when it comes to how services talk to each other and what, if anything, they truly share.
+Anyone who has run a distributed system knows the scene: a call graph on screen, debugging a cascading failure that started with a simple HTTP request timing out. The promise of microservices – independent deployments, clear ownership, bounded contexts – often collides head-on with the realities of inter-service communication and the seductive convenience of shared code. Architecting cloud-native .NET applications on Azure forces us to confront these tensions head-on, particularly when it comes to how services talk to each other and what, if anything, they truly share.
 
 The ease of spinning up new services in Azure (App Services, AKS, Container Apps, Functions) has amplified the need for robust communication strategies. Just throwing HTTP requests around might work for a handful of services, but as the system scales and failure domains proliferate, that synchronous dance quickly becomes a distributed monolith.
 

@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Advanced Diagnostics, Profiling, and Performance Tuning for .NET Applications"
 date: 2026-09-02 07:43:36 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/1842186/does-net-ftpwebrequest-support-both-implicit-ftps-and-explicit-ftpes"
+sources:
+  - "https://stackoverflow.com/questions/1842186/does-net-ftpwebrequest-support-both-implicit-ftps-and-explicit-ftpes"
+tags: ["performance", "dotnet"]
 ---
 
 The application had been running flawlessly for months, churning through millions of requests daily. Then, subtly at first, the occasional timeout against our primary Redis cache. A few users noticed slower page loads. Soon, the SRE team reported elevated CPU usage across the board, without a corresponding increase in request volume. Standard APM dashboards were green, showing healthy latencies for individual operations, yet the aggregate experience was clearly degraded. This wasn't a sudden crash; it was a creeping rot, a performance anomaly that defied simple explanations. This is the kind of engineering challenge that demands we look beyond the surface, deep into the runtime's heart.

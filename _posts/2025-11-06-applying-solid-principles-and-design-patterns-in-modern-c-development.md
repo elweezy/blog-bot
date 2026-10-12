@@ -5,6 +5,7 @@ date: 2025-11-06 13:15:27 +0000
 categories: dotnet blog
 sources:
   - "https://dev.to/gigaherz/automate-data-auditing-in-your-dal-learn-to-separate-technical-vs-business-logical-crud-use-c-2pf2"
+tags: ["csharp", "architecture"]
 ---
 
 You start a new project, everything's clean, pristine. You're thinking, "This time, it'll be different!" Then, slowly but surely, entropy kicks in. Requirements shift, new features get bolted on, and before you know it, that elegant little application has transformed into a sprawling spaghetti monster that's terrifying to touch.

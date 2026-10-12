@@ -33,7 +33,7 @@ public sealed partial class PostSanitizer
         Rx(@"\bI learned (this )?the hard way\b"),
         Rx(@"\bwar stor(y|ies)\b"),
         Rx(@"\b(years|months) ago,? (I|we)\b"),
-        Rx(@"\b(a few|some|several|many|two|three) (years|months|weeks) (back|ago)\b"),
+        Rx(@"\b(a few|some|several|many|two|three) (years|months|weeks) (back|ago),? (I|we|my|our)\b"),
         Rx(@"\bfirst[- ]?hand\b"),
         Rx(@"\bI(['’]ve| have) (witnessed|lived|been there|run into|hit this|fought)\b"),
         Rx(@"\bI was (wrestling|working on|debugging|building|tasked|called|paged|on call)\b"),

@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Advanced C# Generics: Implementing CRTP for Robust Library Design"
 date: 2026-01-28 03:37:50 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/reslava/why-i-chose-crtp-for-my-c-result-pattern-library-2a49"
+sources:
+  - "https://dev.to/reslava/why-i-chose-crtp-for-my-c-result-pattern-library-2a49"
+tags: ["csharp", "architecture"]
 ---
 
 When designing robust, extensible libraries in C#, we often find ourselves at a crossroads: how do we create a base abstraction that provides common functionality while simultaneously allowing derived types to introduce specific behaviors, *and* ensure that the fluent API methods on the base type always return the *most derived* type? Standard inheritance with virtual methods works well for runtime polymorphism, but it doesn't give the base class compile-time knowledge of its concrete subclass. This can lead to awkward casting, loss of specific type information in fluent chains, or reliance on runtime reflection, all of which compromise type safety and performance.

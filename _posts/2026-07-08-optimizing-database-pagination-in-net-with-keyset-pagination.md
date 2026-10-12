@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Optimizing Database Pagination in .NET with Keyset Pagination"
 date: 2026-07-08 04:06:12 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/lttruc1402/why-skiptake-gets-slower-on-every-page-and-how-keyset-pagination-fixes-it-2jmn"
+sources:
+  - "https://dev.to/lttruc1402/why-skiptake-gets-slower-on-every-page-and-how-keyset-pagination-fixes-it-2jmn"
+tags: ["ef-core", "performance", "data"]
 ---
 
 The performance characteristics of data retrieval operations often reveal themselves only after a system has been running in production for some time, accumulating significant data volumes. A classic scenario I've encountered repeatedly involves web APIs backing large tabular displays, where initial page loads are snappy, but as users scroll or navigate deeper into the data set, response times spiral, sometimes into many seconds. This isn't just an inconvenience; it can cripple a user experience and consume disproportionate database resources, leading to cascading performance issues across an application.

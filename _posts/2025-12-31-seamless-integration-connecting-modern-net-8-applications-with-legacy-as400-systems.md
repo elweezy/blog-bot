@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Seamless Integration: Connecting Modern .NET 8 Applications with Legacy AS400 Systems"
 date: 2025-12-31 03:35:47 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/79652836/calling-as400-rpg-program-with-complex-data-structure-from-a-net-8-application"
+sources:
+  - "https://stackoverflow.com/questions/79652836/calling-as400-rpg-program-with-complex-data-structure-from-a-net-8-application"
+tags: ["architecture", "data", "dotnet"]
 ---
 
 Modernizing a .NET application often means navigating a tangled web of dependencies, and few threads are as thick or as critical as those connecting to legacy AS400 systems. It’s a scenario I’ve encountered repeatedly: a mandate to deliver a sleek, cloud-native .NET 8 application, perhaps leveraging Minimal APIs or background services, while the bedrock of core business logic and critical data remains firmly planted on an IBM i (AS400). The challenge isn't merely about database connectivity; it often escalates to invoking decades-old RPG programs that encapsulate intricate business rules, accepting equally intricate data structures.

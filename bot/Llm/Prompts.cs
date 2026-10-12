@@ -286,6 +286,8 @@ public static class Prompts
         - descriptive words that add no new fact;
         - opinions, recommendations and reasoning clearly framed as the writer's own ("I think", "I'd", "my read is",
           "that suggests").
+        An opinion is no cover for a factual justification: in "I think X because Y causes Z", the part "Y causes Z"
+        is a factual claim and needs support like any other.
 
         Kinds:
         - "sentence": one sentence, list item or table row that cites evidence.
@@ -296,8 +298,11 @@ public static class Prompts
         - "design": a row of the writer's own Draft design table. Trade-off judgments ("adds latency", "harder to
           maintain") are the writer's assessment and are fine. Reject only if the row states a specific fact about
           a named project or source, or a figure, that the evidence doesn't support.
-        - "diagram": a Mermaid diagram with its caption. Supported if every node and edge is in the evidence, or the
-          caption presents it as the writer's own sketch or proposal.
+        - "diagram": a Mermaid diagram with its caption. Check every arrow: the evidence must state that relationship
+          (that A sends X to B, or A routes to B), not merely mention A and B. For example, if the evidence says a
+          gateway "generates keys" and separately that "80% of requests go to model M", an arrow "gateway routes 80%
+          to M" is NOT supported. Supported only if every arrow passes, or the caption explicitly presents the
+          diagram as the writer's own sketch or proposal.
         - "teaser": the post summary. Every factual statement in it must be supported.
 
         Return one verdict for every id, with a one-sentence reason that names the unsupported part.
@@ -309,12 +314,15 @@ public static class Prompts
         """;
 
     public const string RepairSystem = """
-        A fact-checker rejected some sentences of a blog post. For each one you get the sentence, the reason it was
-        rejected, and the evidence available. Return a replacement for each, choosing one:
+        A fact-checker rejected some sentences of a blog post. For each one you get the sentence, the paragraph it
+        sits in, the reason it was rejected, and the evidence available. Several rejected sentences may share a
+        paragraph; make their replacements read well together. Return a replacement for each, choosing one:
         1. Rewrite it so every fact matches the evidence. Keep a citation marker [[S1: "exact words"]] with words
            copied character for character from the evidence, placed before the final punctuation.
-        2. If it is really the writer's judgment, reframe it clearly as opinion ("I think...", "I'd...") without
-           stating new facts.
+        2. If it is really the writer's judgment, reframe it as opinion without stating new facts. Vary the framing
+           ("My read is...", "I'd expect...", "That suggests...", "I suspect...") and never start two neighbouring
+           sentences the same way; if the previous sentence already reads as the writer's view, often the best fix
+           is to fold the point into it or delete it. Drop any factual "because" clause the evidence doesn't support.
         3. Return an empty string to delete it, when neither works.
         Never add facts that aren't in the evidence. Keep the sentence's role in the paragraph (same subject, similar
         length). For table rows, return the whole row with the same number of columns.

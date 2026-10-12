@@ -22,14 +22,15 @@ layout: default
   <div class="post-content">{{ content }}</div>
 
   <footer class="post-footer">
-    {% if page.sources.size > 0 %}
+    {% comment %}New posts cite their sources inline as footnotes; older posts list them here instead.{% endcomment %}
+    {% unless content contains 'class="footnotes"' %}{% if page.sources.size > 0 %}
     <section>
       <h2>Sources</h2>
       <ol>
         {% for url in page.sources %}{% assign scheme = url | slice: 0, 8 | downcase %}{% if scheme == "https://" or scheme contains "http://" %}<li><a href="{{ url | escape }}" rel="noopener nofollow">{{ url | remove_first: "https://" | remove_first: "www." | truncate: 80 | escape }}</a></li>{% endif %}{% endfor %}
       </ol>
     </section>
-    {% endif %}
+    {% endif %}{% endunless %}
 
     {% include related-posts.html %}
 

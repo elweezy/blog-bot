@@ -96,9 +96,12 @@ public sealed partial class PostSanitizer
         if (lines.Count > 0 && lines[0].StartsWith("# "))
             text = string.Join('\n', lines.Skip(1)).TrimStart();
 
+        // Quotes inside citation markers must stay exactly as in the source, so cleanup works around them.
+        var saved = new List<string>();
+        text = Citations.Protect(Citations.FixPlacement(text), saved);
         text = LimitEmDashes(text);
         text = StripHtmlAndLinks(text);
-        return text.Trim() + "\n";
+        return Citations.Restore(text, saved).Trim() + "\n";
     }
 
     /// <param name="sourceMaterial">When given, every metric in the post (prices, latencies, percentages, sizes) must appear in it.</param>
@@ -158,7 +161,8 @@ public sealed partial class PostSanitizer
 
     public static List<Match> MermaidBlocks(string markdown) => MermaidBlock().Matches(markdown).ToList();
 
-    public static string ProseOnly(string markdown) => FencedBlock().Replace(markdown, " ");
+    // Quoted source text inside citation markers isn't the post's own prose, so style checks skip it.
+    public static string ProseOnly(string markdown) => Citations.StripMarkers(FencedBlock().Replace(markdown, " "));
 
     /// <summary>
     /// The description is the RSS summary Zapier posts to LinkedIn, so its figures must be in the sources too.

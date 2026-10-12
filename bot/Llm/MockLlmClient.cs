@@ -31,9 +31,19 @@ public sealed class MockLlmClient : ILlmClient
         return Task.FromResult(topics);
     }
 
-    public Task<string> WriteDraftAsync(Topic topic, string sourceMaterial, string? authorProfile, CancellationToken ct = default) =>
-        Task.FromResult($$"""
-            {{topic.Description}}
+    public Task<string> WriteDraftAsync(Topic topic, string sourceMaterial, string? authorProfile, CancellationToken ct = default)
+    {
+        // Quote real sentences from source 1 so the citation checks have something genuine to verify.
+        var source1 = sourceMaterial.Split("[S2]")[0];
+        var quotes = System.Text.RegularExpressions.Regex.Split(source1, @"(?<=[.!?])\s+")
+            .Select(q => q.Trim())
+            .Where(q => q.Length is > 40 and < 220 && !q.Contains('"') && !q.Contains('['))
+            .Take(7)
+            .ToList();
+        var cited = string.Join(" ", quotes.Select((q, i) => $"Point {i + 1} from the source [[S1: \"{q.TrimEnd('.', '!', '?')}\"]]."));
+
+        return Task.FromResult($$"""
+            {{topic.Description}} {{cited}} I think this matters. I'd test it first.
 
             ## How the request flows
 
@@ -59,6 +69,7 @@ public sealed class MockLlmClient : ILlmClient
 
             - How fresh does the index need to be?
             """);
+    }
 
     public Task<GeneratedPost> EditPostAsync(
         Topic topic,
@@ -73,6 +84,9 @@ public sealed class MockLlmClient : ILlmClient
             Description = $"Mock description for {topic.Title}.",
             Tags = ["mock", "ai"]
         });
+
+    public Task<List<ClaimVerdict>> VerifyClaimsAsync(IReadOnlyList<ClaimCheck> claims, string model, CancellationToken ct = default) =>
+        Task.FromResult(claims.Select(c => new ClaimVerdict { Id = c.Id, Supported = true, Reason = "mock" }).ToList());
 
     public Task<string> FixDiagramAsync(string diagram, string error, CancellationToken ct = default) =>
         Task.FromResult(diagram);

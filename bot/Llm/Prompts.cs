@@ -105,6 +105,33 @@ public static class Prompts
         Present it as a draft you'd bring to a design review, not a final answer.
         """;
 
+    private const string CitationRules = """
+        ## Citations (required, checked by code and by a separate fact-checker)
+        End every sentence that states a fact from the sources with a marker holding the exact words it relies on:
+        [[S1: "exact words copied from source 1"]]
+        - S1, S2, S3 are the source labels in the source material. The quoted words must be copied character for
+          character from that source: at least a few words, ideally the whole sentence that supports the claim.
+        - Put the marker right before the sentence's final punctuation. Several markers on one sentence are fine.
+        - Cite facts, figures, quotes, and descriptions of how someone's project works. Don't cite your own opinions
+          ("I think..."), your Draft design assumptions, or general reasoning.
+        - A sentence must say no more than its quote supports: same numbers, same meaning, same conditions, same
+          person. If the quote compares "A then B" against "B alone", say exactly that.
+        - Figures in diagrams and the Draft design table follow the same rule: put the matching citation in the
+          caption, or keep the figure out.
+        - Any sentence the fact-checker can't match to its quote is deleted, so be precise rather than fluent.
+
+        Example (sources say: [S1] "Searching loads only the text encoder (~250 MB) and shows results about a tenth
+        of a second after you stop typing." and [S2] "Search is brute force: the query vector against all of them,
+        scored in float32, a few ms for tens of thousands, so no vector DB."):
+
+        Queries only load the text encoder, about 250 MB [[S1: "Searching loads only the text encoder (~250 MB)"]].
+        Results show up roughly a tenth of a second after typing stops [[S1: "shows results about a tenth of a second
+        after you stop typing"]]. There's no vector database at all: every query is scored against every stored
+        vector, which takes a few milliseconds at tens of thousands of items [[S2: "Search is brute force: the query
+        vector against all of them, scored in float32, a few ms for tens of thousands, so no vector DB"]]. I think
+        that's the right call for one person's files.
+        """;
+
     private const string CodeAndFormat = """
         ## Code
         Only include code if it clarifies something prose and diagrams can't. If the code is your sketch of something
@@ -117,21 +144,22 @@ public static class Prompts
         - GitHub-flavored Markdown. No H1, the page prints the title.
         - ## and ### headings that say something specific about this topic. Never generic labels like
           "Introduction", "Why it matters", "Deep dive", "Pitfalls", "Best practices" or "Conclusion".
-        - 1000 to 1600 words, not counting code and diagrams.
+        - 600 to 900 words, not counting code and diagrams. One idea, argued well, beats a survey.
         - Don't put links in the text and don't mention "the sources" or "source material"; the page lists sources.
         """;
 
     public static string WriterSystem(string? authorProfile) =>
-        string.Join("\n\n", Audience, Honesty, Profile(authorProfile), Voice, Diagrams, DraftDesign, CodeAndFormat);
+        string.Join("\n\n", Audience, Honesty, Profile(authorProfile), Voice, Diagrams, DraftDesign, CitationRules, CodeAndFormat);
 
     public static string WriterUser(Topic topic, string sourceMaterial) => $"""
         Topic: {topic.Title}
         Angle to argue: {topic.Angle}
         Summary: {topic.Description}
 
-        Source material (public posts and discussions; the only allowed source of facts). Replies labelled "Original
-        poster" come from the person who made the project or write-up and usually hold the most concrete details.
-        Replies appear without the comment they answer, so don't attach a figure to a context the reply doesn't state.
+        Source material (public posts and discussions; the only allowed source of facts), cited by their labels
+        (S1, S2, ...). Replies labelled "Original poster" come from the person who made the project or write-up and
+        usually hold the most concrete details. Replies appear without the comment they answer, so don't attach a
+        figure to a context the reply doesn't state.
         <sources>
         {sourceMaterial}
         </sources>
@@ -154,8 +182,11 @@ public static class Prompts
         5. Keep the Mermaid diagrams and the "## Draft design" section. Fix any diagram that breaks the diagram rules
            below. Keep or add the italic "Figure:" caption under each diagram.
         6. Don't add new sections or padding. Shorter and sharper beats longer.
+        7. Keep every citation marker exactly as written unless the checker findings say its quote is wrong. If a
+           quote isn't in the source, replace it with words that are, or delete the sentence. Every factual sentence
+           in your output must still carry a marker.
         """,
-        Honesty, Profile(authorProfile), Voice, Diagrams, DraftDesign, CodeAndFormat,
+        Honesty, Profile(authorProfile), Voice, Diagrams, DraftDesign, CitationRules, CodeAndFormat,
         $"""
         ## Output
         Return JSON with:
@@ -201,7 +232,7 @@ public static class Prompts
         {string.Join("\n", excludedTitles.Select(t => "- " + t))}
 
         Propose 8 distinct post topics. Each topic must:
-        - be grounded in 1 to 3 of the items above (by index) that give real material to write from. When a topic
+        - be grounded in 1 or 2 of the items above (by index), preferably one, with real material to write from. When a topic
           uses several items, they must be about the same subject; never bundle unrelated projects into one post;
         - be about practical AI engineering: LLM apps, agents and tool use, RAG and retrieval, evals, inference cost and
           latency, open-weight and local models, fine-tuning, AI inside backend systems, developer tooling;
@@ -218,6 +249,34 @@ public static class Prompts
 
         For each topic return: "title", "angle" (one sentence: the position the post argues), "summary" (1 to 2
         sentences on what the post covers) and "sourceIndexes".
+        """;
+
+    public const string VerifierSystem = """
+        You are a strict fact-checker for a technical blog. You receive items from a post, each with evidence:
+        exact passages from the sources (with some surrounding context). Decide for each item whether the evidence
+        supports it.
+
+        "supported" is true only if every factual element of the item is stated by the evidence:
+        - every number, and what it measures and under which conditions;
+        - every comparison, and exactly what is being compared (for example, "A then B" versus "B alone" is not the
+          same as "A versus B");
+        - who did, said, built or measured something;
+        - every component, step or connection described as part of someone's system.
+        Wording may differ. Opinions clearly framed as the writer's own ("I think", "I'd", "my guess") need no
+        support. A claim that generalizes beyond the evidence, adds details, or changes a meaning is NOT supported.
+
+        Kinds:
+        - "sentence": one sentence, list item or table row.
+        - "diagram": a Mermaid diagram with its caption. Supported only if every node and edge is in the evidence,
+          or the caption clearly presents it as the writer's own sketch or proposal.
+        - "teaser": the post summary. Every factual statement in it must be supported.
+
+        Return one verdict for every id, with a one-sentence reason. When in doubt, answer false.
+        """;
+
+    public static string VerifierUser(string itemsJson) => $"""
+        Items (JSON):
+        {itemsJson}
         """;
 
     public const string FixDiagramSystem = """

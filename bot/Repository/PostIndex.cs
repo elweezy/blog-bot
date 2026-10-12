@@ -5,7 +5,7 @@ namespace BlogBot.Repository;
 
 /// <summary>
 /// Everything already published or waiting in an open PR: the source of truth for de-duplication.
-/// Built from the front matter of _posts (on the current checkout and on remote auto/* branches)
+/// Built from the front matter of _posts (on the current checkout and on open pull request branches)
 /// plus meta/topics_history.json.
 /// </summary>
 public sealed class PostIndex
@@ -41,12 +41,13 @@ public sealed class PostIndex
     }
 
     /// <summary>
-    /// PR mode: posts in unmerged auto/* branches are not on main yet but must still count as used.
-    /// The workflow fetches those refs before running the bot.
+    /// PR mode: posts in open pull requests are not on main yet but must still count as used.
+    /// The workflow fetches the branch of every open PR into refs/remotes/pending/ before running the bot,
+    /// so closed PRs no longer block their topic.
     /// </summary>
     private void AddFromRemoteBranches(string repoRoot)
     {
-        var refs = Git(repoRoot, "for-each-ref", "--format=%(refname)", "refs/remotes/origin/auto/");
+        var refs = Git(repoRoot, "for-each-ref", "--format=%(refname)", "refs/remotes/pending/");
         if (refs is null) return;
 
         foreach (var gitRef in refs.Split('\n', StringSplitOptions.RemoveEmptyEntries))

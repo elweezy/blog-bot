@@ -15,9 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Posts waiting in unmerged PRs live on auto/* branches; the bot reads them so it won't repeat a topic.
-      - name: Fetch pending post branches
-        run: git fetch --depth=1 origin '+refs/heads/auto/*:refs/remotes/origin/auto/*' || true
+      # Posts waiting in open PRs aren't on main yet; the bot reads them so it won't repeat a topic.
+      - name: Fetch branches of open pull requests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for branch in $(gh pr list --state open --json headRefName --jq '.[].headRefName'); do
+            git fetch --depth=1 origin "+refs/heads/$branch:refs/remotes/pending/$branch" || true
+          done
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -48,8 +53,11 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           commit-message: "post: ${{ steps.bot.outputs.post_title }}"
-          branch: auto/post-${{ github.run_id }}
+          branch: post-${{ steps.bot.outputs.post_slug }}
           delete-branch: true
+          # Requesting a review makes GitHub email the repo owner when a new post is ready.
+          reviewers: ${{ github.repository_owner }}
+          assignees: ${{ github.repository_owner }}
           title: "New post: ${{ steps.bot.outputs.post_title }}"
           body: |
             New post: `${{ steps.bot.outputs.post_path }}`

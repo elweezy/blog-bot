@@ -1,0 +1,22 @@
+---
+layout: default
+title: "Archive"
+permalink: /archive/
+---
+
+<section class="tag-index archive">
+  <h1>Archive</h1>
+  <p class="archive-summary">All {{ site.posts.size }} posts, newest first.</p>
+  {% assign years = site.posts | group_by_exp: "post", "post.date | date: '%Y'" %}
+  {% for year in years %}
+  <h2 id="y{{ year.name }}">{{ year.name }} <small>({{ year.items.size }})</small></h2>
+  <ul>
+    {% for post in year.items %}
+    <li>
+      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+      <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d" }}</time>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endfor %}
+</section>

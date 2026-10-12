@@ -175,3 +175,106 @@
     text-align: right;
   }
 }
+
+// ---- Read next ----
+.related {
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  li {
+    display: grid;
+    gap: 0.15rem;
+    margin: 0;
+  }
+
+  a {
+    color: var(--fg);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      color: var(--accent);
+    }
+  }
+
+  .meta {
+    font-size: 0.78rem;
+  }
+}
+
+// ---- Contents (right margin on wide screens only) ----
+.post-content h2,
+.post-content h3 {
+  scroll-margin-top: 5rem;
+}
+
+.toc {
+  display: none;
+}
+
+@media (min-width: 1300px) {
+  .post-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 14rem;
+    column-gap: 3rem;
+    margin-right: -17rem; // grow into the right margin, keep the article where it is
+  }
+
+  .toc:not([hidden]) {
+    display: block;
+    position: sticky;
+    top: 5.5rem;
+    align-self: start;
+    max-height: calc(100vh - 7rem);
+    overflow-y: auto;
+    font-family: $font-ui;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    border-left: 1px solid var(--border);
+    padding-left: 1rem;
+  }
+
+  .toc-title {
+    margin: 0 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .toc li {
+    margin: 0;
+
+    &.sub {
+      padding-left: 0.8rem;
+    }
+  }
+
+  .toc a {
+    color: var(--muted);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--fg);
+    }
+
+    &[aria-current] {
+      color: var(--accent);
+      font-weight: 600;
+    }
+  }
+}

@@ -3,6 +3,7 @@
     <a class="site-title" href="{{ '/' | relative_url }}">Elvin Jamalov <span>/ AI engineering notes</span></a>
     <nav class="site-nav" aria-label="Main">
       <a href="{{ '/' | relative_url }}" {% if page.url == '/' %}aria-current="page"{% endif %}>Posts</a>
+      <a href="{{ '/archive/' | relative_url }}" {% if page.url == '/archive/' %}aria-current="page"{% endif %}>Archive</a>
       <a href="{{ '/tags/' | relative_url }}" {% if page.url == '/tags/' %}aria-current="page"{% endif %}>Tags</a>
       <a href="{{ '/about/' | relative_url }}" {% if page.url == '/about/' %}aria-current="page"{% endif %}>About</a>
       <a href="{{ '/feed.xml' | relative_url }}">RSS</a>

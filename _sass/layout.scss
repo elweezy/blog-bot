@@ -216,6 +216,10 @@
 
 // ---- Tags page ----
 .tag-index {
+  h1 {
+    margin-top: 0;
+  }
+
   h2 {
     font-size: 1.1rem;
     scroll-margin-top: 5rem;
@@ -227,17 +231,72 @@
   }
 
   li {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
     gap: 0 1rem;
-    padding-block: 0.35rem;
+    padding-block: 0.45rem;
     border-bottom: 1px dashed var(--border);
+  }
+
+  li a {
+    color: var(--fg);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
   }
 
   time {
     font-family: $font-ui;
     font-size: 0.82rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+}
+
+.archive-summary {
+  color: var(--muted);
+  font-family: $font-ui;
+  font-size: 0.95rem;
+}
+
+// Overview of all tags at the top of the Tags page.
+.tag-index .tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem;
+
+  li {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-family: $font-ui;
+    font-size: 0.85rem;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  span {
+    font-size: 0.75rem;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }

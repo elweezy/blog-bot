@@ -1,0 +1,37 @@
+{%- comment -%}
+  Up to 3 posts that share the most tags with this one; topped up with the newest posts when fewer match.
+{%- endcomment -%}
+{%- assign related_count = 0 -%}
+{%- assign related_urls = "|" -%}
+{%- capture related_items -%}
+  {%- if page.tags.size > 0 -%}
+    {%- for wanted in (1..4) reversed -%}
+      {%- for post in site.posts -%}
+        {%- if related_count < 3 and post.url != page.url -%}
+          {%- assign shared = 0 -%}
+          {%- for tag in post.tags -%}{%- if page.tags contains tag -%}{%- assign shared = shared | plus: 1 -%}{%- endif -%}{%- endfor -%}
+          {%- if shared == wanted -%}
+            {%- assign related_count = related_count | plus: 1 -%}
+            {%- assign related_urls = related_urls | append: post.url | append: "|" -%}
+            {%- include related-post-item.html post=post -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endfor -%}
+  {%- endif -%}
+  {%- for post in site.posts -%}
+    {%- assign marker = "|" | append: post.url | append: "|" -%}
+    {%- if related_count < 3 and post.url != page.url -%}
+      {%- unless related_urls contains marker -%}
+        {%- assign related_count = related_count | plus: 1 -%}
+        {%- include related-post-item.html post=post -%}
+      {%- endunless -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- if related_count > 0 -%}
+<section class="related" aria-labelledby="related-title">
+  <h2 id="related-title">Read next</h2>
+  <ul>{{ related_items }}</ul>
+</section>
+{%- endif -%}

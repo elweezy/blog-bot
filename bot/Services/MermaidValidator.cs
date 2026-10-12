@@ -62,6 +62,13 @@ public sealed class MermaidValidator
         };
         foreach (var arg in args) psi.ArgumentList.Add(arg);
 
+        // The renderer runs a headless browser on model-written diagrams; it has no business seeing API keys or tokens.
+        foreach (var key in psi.Environment.Keys.Where(k =>
+                     k.Contains("KEY", StringComparison.OrdinalIgnoreCase) ||
+                     k.Contains("TOKEN", StringComparison.OrdinalIgnoreCase) ||
+                     k.Contains("SECRET", StringComparison.OrdinalIgnoreCase)).ToList())
+            psi.Environment.Remove(key);
+
         using var process = Process.Start(psi) ?? throw new InvalidOperationException($"Could not start {_mmdc}");
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(timeout);

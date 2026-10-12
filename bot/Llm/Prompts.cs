@@ -113,8 +113,9 @@ public static class Prompts
         Angle to argue: {topic.Angle}
         Summary: {topic.Description}
 
-        Source material (public posts and discussions; the only allowed source of facts). Replies from the original
-        poster or submitter usually contain the most concrete details about how things work; use them.
+        Source material (public posts and discussions; the only allowed source of facts). Replies labelled "Original
+        poster" come from the person who made the project or write-up and usually hold the most concrete details.
+        Replies appear without the comment they answer, so don't attach a figure to a context the reply doesn't state.
         <sources>
         {sourceMaterial}
         </sources>

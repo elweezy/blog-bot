@@ -75,7 +75,7 @@ public sealed class FileBlogRepository
         var sources = topic.Sources.Count > 0
             ? topic.Sources.SelectMany(s => new[] { s.Url, s.DiscussionUrl })
             : topic.SupportingUrls;
-        var sourceList = sources.OfType<string>().Where(u => u.Length > 0).Distinct().ToList();
+        var sourceList = sources.OfType<string>().Where(IsHttpUrl).Distinct().ToList();
         if (sourceList.Count > 0)
         {
             sb.Append("sources:\n");
@@ -87,6 +87,9 @@ public sealed class FileBlogRepository
         sb.Append(post.Markdown.Trim()).Append('\n');
         return sb.ToString();
     }
+
+    private static bool IsHttpUrl(string url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp);
 
     private static string Yaml(string value) =>
         "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ") + "\"";

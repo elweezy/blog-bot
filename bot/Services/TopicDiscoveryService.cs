@@ -134,15 +134,16 @@ public sealed partial class TopicDiscoveryService
 
     private async Task<string> FetchHackerNewsThreadAsync(TopicCandidate candidate, int maxChars, CancellationToken ct)
     {
-        var sb = new StringBuilder();
+        var main = new StringBuilder();
+        var isLinkPost = candidate.DiscussionUrl is not null && candidate.Url != candidate.DiscussionUrl;
 
         // The linked article carries the substance; the thread adds practitioner pushback.
-        if (candidate.DiscussionUrl is not null && candidate.Url != candidate.DiscussionUrl)
+        if (isLinkPost)
         {
             // A slow or blocked article site must not cost us the thread as well.
             try
             {
-                sb.AppendLine(Truncate(await FetchPageTextAsync(candidate.Url, ct), maxChars * 2 / 3)).AppendLine();
+                main.AppendLine(await FetchPageTextAsync(candidate.Url, ct)).AppendLine();
             }
             catch (Exception ex) when (!ct.IsCancellationRequested)
             {
@@ -151,24 +152,20 @@ public sealed partial class TopicDiscoveryService
         }
 
         var item = await GetJsonAsync<HnItem>($"https://hn.algolia.com/api/v1/items/{candidate.SourceId}", "Hacker News item", ct);
-        if (item is null) return sb.ToString();
+        if (item is null) return main.ToString();
 
         if (!string.IsNullOrWhiteSpace(item.Text))
-            sb.AppendLine(StripHtml(item.Text)).AppendLine();
+            main.AppendLine(StripHtml(item.Text));
 
-        // The submitter's own replies often hold the most concrete details, so they come first.
-        var authorReplies = item.Descendants()
-            .Where(c => c.Author is not null && c.Author == item.Author && !string.IsNullOrWhiteSpace(c.Text))
-            .OrderByDescending(c => DetailScore(c.Text!))
-            .Take(5)
-            .Select(c => "- Submitter (reply): " + Truncate(StripHtml(c.Text!), 700));
-        var comments = item.Children
-            .Where(c => c.Author != item.Author && !string.IsNullOrWhiteSpace(c.Text))
-            .Take(6)
-            .Select(c => "- HN commenter: " + Truncate(StripHtml(c.Text!), 500));
-        sb.AppendLine("Discussion highlights:").AppendLine(string.Join("\n", authorReplies.Concat(comments)));
+        // On a link post the submitter is usually not the article's author, so only self-posts (Show HN, Ask HN)
+        // treat the submitter's replies as coming from the creator.
+        var creator = isLinkPost ? null : item.Author;
+        var replies = item.Descendants()
+            .Where(c => !string.IsNullOrWhiteSpace(c.Text) && (c.Author == creator || item.Children.Contains(c)))
+            .Select(c => new ThreadReply(c.Author, StripHtml(c.Text!)))
+            .ToList();
 
-        return sb.ToString();
+        return ComposeThread(main.ToString(), creator, replies, "HN commenter", maxChars);
     }
 
     private sealed class HnSearchResponse
@@ -314,30 +311,62 @@ public sealed partial class TopicDiscoveryService
         var doc = XDocument.Parse(xml);
         XNamespace atom = "http://www.w3.org/2005/Atom";
         var entries = doc.Descendants(atom + "entry")
-            .Select(e => (
-                Author: e.Element(atom + "author")?.Element(atom + "name")?.Value,
-                Text: StripRedditFooter(StripHtml(e.Element(atom + "content")?.Value ?? string.Empty))))
-            .Where(e => e.Text.Length > 0)
+            .Select(e => new ThreadReply(
+                e.Element(atom + "author")?.Element(atom + "name")?.Value,
+                StripRedditFooter(StripHtml(e.Element(atom + "content")?.Value ?? string.Empty))))
             .ToList();
         if (entries.Count == 0) return string.Empty;
 
-        var sb = new StringBuilder();
-        sb.AppendLine(Truncate(entries[0].Text, maxChars / 3)).AppendLine();
+        // The first entry is always the post, even when its body is empty (link posts), so its author is the poster.
+        return ComposeThread(entries[0].Text, entries[0].Author, entries.Skip(1).ToList(), "Reddit commenter", maxChars);
+    }
 
-        // The poster's own replies (answers about how the thing works) carry the best details, so they come first.
-        var poster = entries[0].Author;
-        var replies = entries.Skip(1)
-            .Where(e => e.Text.Length > 80 && !e.Text.Contains("I am a bot", StringComparison.OrdinalIgnoreCase))
+    private sealed record ThreadReply(string? Author, string Text);
+
+    /// <summary>
+    /// Source text for a discussion that always fits in maxChars: the creator's replies get at most 35% of the budget,
+    /// outside comments 25% (60% when there is no known creator), and the main text gets the rest. Within each section the most detailed replies
+    /// are picked, then shown in thread order.
+    /// </summary>
+    private static string ComposeThread(string mainText, string? creator, IReadOnlyList<ThreadReply> replies,
+        string commenterLabel, int maxChars)
+    {
+        const string header = "Discussion highlights (replies appear without the comment they answer):";
+        // The creator's answers are the most informative part of a thread, so they get a little more room.
+        var creatorBudget = maxChars * 35 / 100;
+        var commentBudget = maxChars * 25 / 100;
+
+        var useful = replies
+            .Select((reply, index) => (Reply: reply, Index: index))
+            .Where(x => x.Reply.Text.Length > 80 && !x.Reply.Text.Contains("I am a bot", StringComparison.OrdinalIgnoreCase))
             .ToList();
-        // Rank by concrete detail (figures, units, code) so dense technical answers beat long thank-you notes.
-        var posterReplies = replies.Where(e => poster is not null && e.Author == poster)
-            .OrderByDescending(e => DetailScore(e.Text)).Take(12)
-            .Select(e => "- Original poster (reply): " + Truncate(e.Text, 800));
-        var comments = replies.Where(e => e.Author != poster)
-            .OrderByDescending(e => DetailScore(e.Text)).Take(6)
-            .Select(e => "- Reddit commenter: " + Truncate(e.Text, 500));
-        sb.AppendLine("Discussion highlights:").AppendLine(string.Join("\n", posterReplies.Concat(comments)));
-        return sb.ToString();
+
+        var creatorSection = creator is null
+            ? string.Empty
+            : Section(useful.Where(x => x.Reply.Author == creator), "Original poster (reply)", 800, creatorBudget);
+        var commentSection = Section(useful.Where(x => creator is null || x.Reply.Author != creator), commenterLabel, 500,
+            creator is null ? creatorBudget + commentBudget : commentBudget);
+
+        var discussion = string.Join("\n", new[] { creatorSection, commentSection }.Where(t => t.Length > 0));
+        if (discussion.Length == 0) return Truncate(mainText.Trim(), maxChars);
+
+        var mainBudget = maxChars - discussion.Length - header.Length - 4;
+        return $"{Truncate(mainText.Trim(), mainBudget)}\n\n{header}\n{discussion}";
+
+        string Section(IEnumerable<(ThreadReply Reply, int Index)> items, string label, int perItem, int sectionBudget)
+        {
+            var picked = new List<(int Index, string Line)>();
+            var used = 0;
+            foreach (var x in items.OrderByDescending(x => DetailScore(x.Reply.Text)))
+            {
+                var line = $"- {label}: {Truncate(x.Reply.Text, perItem)}";
+                if (used + line.Length + 1 > sectionBudget) continue;
+                picked.Add((x.Index, line));
+                used += line.Length + 1;
+            }
+
+            return string.Join("\n", picked.OrderBy(p => p.Index).Select(p => p.Line));
+        }
     }
 
     // Reddit rate-limits feed requests aggressively; wait as long as it asks (capped) and try again.
@@ -367,8 +396,11 @@ public sealed partial class TopicDiscoveryService
     /// <summary>
     /// Rough measure of how much concrete, checkable detail a comment carries.
     /// </summary>
-    private static double DetailScore(string text) =>
-        2.0 * Figures().Count(text) + Code().Count(text) + text.Length / 400.0;
+    private static double DetailScore(string text)
+    {
+        var withoutUrls = Url().Replace(text, " ");
+        return 2.0 * PostSanitizer.CountFigures(withoutUrls) + Code().Count(withoutUrls) + withoutUrls.Length / 400.0;
+    }
 
     // Every RSS entry ends with "submitted by /u/... [link] [comments]".
     private static string StripRedditFooter(string text)
@@ -469,11 +501,12 @@ public sealed partial class TopicDiscoveryService
     [GeneratedRegex(@"<(script|style|nav|header|footer|svg|noscript)[^>]*>.*?</\1>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex NonContentBlocks();
 
-    [GeneratedRegex(@"\d[\d,.]*\s?(%|ms|s\b|kb|mb|gb|tb|k\b|x\b|-d\b|bit|tokens?|fps|hz)?", RegexOptions.IgnoreCase)]
-    private static partial Regex Figures();
-
-    [GeneratedRegex(@"`[^`]+`|\b\w+\(\)|\b[a-z]+_[a-z_]+\b|\.\w{2,4}\b")]
+    // Code references: `inline code`, call() and snake_case identifiers.
+    [GeneratedRegex(@"`[^`]+`|\b\w+\(\)|\b[a-z]+_[a-z_]+\b")]
     private static partial Regex Code();
+
+    [GeneratedRegex(@"https?://\S+")]
+    private static partial Regex Url();
 
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex Tags();

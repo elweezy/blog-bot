@@ -2,6 +2,7 @@ using BlogBot.Llm;
 using BlogBot.Models;
 using BlogBot.Repository;
 using BlogBot.Services;
+using BlogBot.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -18,7 +19,9 @@ builder.Services.AddHttpClient<TopicDiscoveryService>(client =>
     // Identify the bot; Reddit and others reject anonymous clients.
     client.DefaultRequestHeaders.UserAgent.ParseAdd("blog-bot/2.0 (+https://github.com/elweezy/blog-bot)");
     client.Timeout = TimeSpan.FromSeconds(30);
-});
+    // A single page or feed never needs more than this; anything larger is skipped instead of buffered.
+    client.MaxResponseContentBufferSize = 4 * 1024 * 1024;
+}).ConfigurePrimaryHttpMessageHandler(SafeHttp.CreateHandler);
 
 // 3. LLM client: Gemini free tier, or an offline mock for local testing
 if (Environment.GetEnvironmentVariable("USE_MOCK_LLM") == "1")

@@ -11,15 +11,15 @@ permalink: /tags/
   <p>No tagged posts yet.</p>
   {% else %}
   <ul class="tag-cloud" aria-label="All tags">
-    {% for tag in tags %}<li><a href="#{{ tag[0] | slugify }}">{{ tag[0] }} <span>{{ tag[1].size }}</span></a></li>{% endfor %}
+    {% for tag in tags %}<li><a href="#{{ tag[0] | slugify }}">{{ tag[0] | escape }} <span>{{ tag[1].size }}</span></a></li>{% endfor %}
   </ul>
   {% endif %}
   {% for tag in tags %}
-  <h2 id="{{ tag[0] | slugify }}">{{ tag[0] }} <small>({{ tag[1].size }})</small></h2>
+  <h2 id="{{ tag[0] | slugify }}">{{ tag[0] | escape }} <small>({{ tag[1].size }})</small></h2>
   <ul>
     {% for post in tag[1] %}
     <li>
-      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+      <a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a>
       <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %-d, %Y" }}</time>
     </li>
     {% endfor %}

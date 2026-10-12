@@ -36,6 +36,10 @@ public static class Prompts
         - Only claim comparisons the sources actually make. If the sources compare two small models, don't conclude
           anything about large models. You may add your own view on a wider question, but say plainly that it's your
           opinion and that the sources didn't test it.
+        - Keep each figure's meaning exactly as the source states it: what it measures and under which conditions.
+          "Results appear about 0.1 s after typing stops" is a latency, not a deliberate delay.
+        - Anything you infer, predict or generalize beyond the sources must read as your view ("I'd expect...",
+          "My guess is..."), never as established fact.
         - Every price, latency, percentage, multiplier or count must come from the sources. The only exception is a
           sentence that states an explicit assumption ("Assume 20k requests a day...").
         """;
@@ -109,7 +113,8 @@ public static class Prompts
         Angle to argue: {topic.Angle}
         Summary: {topic.Description}
 
-        Source material (public posts and discussions; the only allowed source of facts):
+        Source material (public posts and discussions; the only allowed source of facts). Replies from the original
+        poster or submitter usually contain the most concrete details about how things work; use them.
         <sources>
         {sourceMaterial}
         </sources>
@@ -178,7 +183,8 @@ public static class Prompts
         {string.Join("\n", excludedTitles.Select(t => "- " + t))}
 
         Propose 8 distinct post topics. Each topic must:
-        - be grounded in 1 to 3 of the items above (by index) that give real material to write from;
+        - be grounded in 1 to 3 of the items above (by index) that give real material to write from. When a topic
+          uses several items, they must be about the same subject; never bundle unrelated projects into one post;
         - be about practical AI engineering: LLM apps, agents and tool use, RAG and retrieval, evals, inference cost and
           latency, open-weight and local models, fine-tuning, AI inside backend systems, developer tooling;
         - make a specific, arguable point engineers disagree about, and one the cited items actually support. Don't

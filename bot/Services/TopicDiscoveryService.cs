@@ -156,11 +156,17 @@ public sealed partial class TopicDiscoveryService
         if (!string.IsNullOrWhiteSpace(item.Text))
             sb.AppendLine(StripHtml(item.Text)).AppendLine();
 
+        // The submitter's own replies often hold the most concrete details, so they come first.
+        var authorReplies = item.Descendants()
+            .Where(c => c.Author is not null && c.Author == item.Author && !string.IsNullOrWhiteSpace(c.Text))
+            .OrderByDescending(c => DetailScore(c.Text!))
+            .Take(5)
+            .Select(c => "- Submitter (reply): " + Truncate(StripHtml(c.Text!), 700));
         var comments = item.Children
-            .Where(c => !string.IsNullOrWhiteSpace(c.Text))
+            .Where(c => c.Author != item.Author && !string.IsNullOrWhiteSpace(c.Text))
             .Take(6)
             .Select(c => "- HN commenter: " + Truncate(StripHtml(c.Text!), 500));
-        sb.AppendLine("Discussion highlights:").AppendLine(string.Join("\n", comments));
+        sb.AppendLine("Discussion highlights:").AppendLine(string.Join("\n", authorReplies.Concat(comments)));
 
         return sb.ToString();
     }
@@ -182,8 +188,11 @@ public sealed partial class TopicDiscoveryService
 
     private sealed class HnItem
     {
+        [JsonPropertyName("author")] public string? Author { get; set; }
         [JsonPropertyName("text")] public string? Text { get; set; }
         [JsonPropertyName("children")] public List<HnItem> Children { get; set; } = new();
+
+        public IEnumerable<HnItem> Descendants() => Children.SelectMany(c => c.Descendants().Prepend(c));
     }
 
     #endregion
@@ -304,19 +313,30 @@ public sealed partial class TopicDiscoveryService
 
         var doc = XDocument.Parse(xml);
         XNamespace atom = "http://www.w3.org/2005/Atom";
-        var texts = doc.Descendants(atom + "entry")
-            .Select(e => StripRedditFooter(StripHtml(e.Element(atom + "content")?.Value ?? string.Empty)))
-            .Where(t => t.Length > 0)
+        var entries = doc.Descendants(atom + "entry")
+            .Select(e => (
+                Author: e.Element(atom + "author")?.Element(atom + "name")?.Value,
+                Text: StripRedditFooter(StripHtml(e.Element(atom + "content")?.Value ?? string.Empty))))
+            .Where(e => e.Text.Length > 0)
             .ToList();
-        if (texts.Count == 0) return string.Empty;
+        if (entries.Count == 0) return string.Empty;
 
         var sb = new StringBuilder();
-        sb.AppendLine(Truncate(texts[0], maxChars * 2 / 3)).AppendLine();
+        sb.AppendLine(Truncate(entries[0].Text, maxChars / 3)).AppendLine();
 
-        var comments = texts.Skip(1)
-            .Where(t => t.Length > 80 && !t.Contains("I am a bot", StringComparison.OrdinalIgnoreCase))
-            .Take(8).Select(t => "- Reddit commenter: " + Truncate(t, 500));
-        sb.AppendLine("Discussion highlights:").AppendLine(string.Join("\n", comments));
+        // The poster's own replies (answers about how the thing works) carry the best details, so they come first.
+        var poster = entries[0].Author;
+        var replies = entries.Skip(1)
+            .Where(e => e.Text.Length > 80 && !e.Text.Contains("I am a bot", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        // Rank by concrete detail (figures, units, code) so dense technical answers beat long thank-you notes.
+        var posterReplies = replies.Where(e => poster is not null && e.Author == poster)
+            .OrderByDescending(e => DetailScore(e.Text)).Take(12)
+            .Select(e => "- Original poster (reply): " + Truncate(e.Text, 800));
+        var comments = replies.Where(e => e.Author != poster)
+            .OrderByDescending(e => DetailScore(e.Text)).Take(6)
+            .Select(e => "- Reddit commenter: " + Truncate(e.Text, 500));
+        sb.AppendLine("Discussion highlights:").AppendLine(string.Join("\n", posterReplies.Concat(comments)));
         return sb.ToString();
     }
 
@@ -343,6 +363,12 @@ public sealed partial class TopicDiscoveryService
 
         return null;
     }
+
+    /// <summary>
+    /// Rough measure of how much concrete, checkable detail a comment carries.
+    /// </summary>
+    private static double DetailScore(string text) =>
+        2.0 * Figures().Count(text) + Code().Count(text) + text.Length / 400.0;
 
     // Every RSS entry ends with "submitted by /u/... [link] [comments]".
     private static string StripRedditFooter(string text)
@@ -442,6 +468,12 @@ public sealed partial class TopicDiscoveryService
 
     [GeneratedRegex(@"<(script|style|nav|header|footer|svg|noscript)[^>]*>.*?</\1>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex NonContentBlocks();
+
+    [GeneratedRegex(@"\d[\d,.]*\s?(%|ms|s\b|kb|mb|gb|tb|k\b|x\b|-d\b|bit|tokens?|fps|hz)?", RegexOptions.IgnoreCase)]
+    private static partial Regex Figures();
+
+    [GeneratedRegex(@"`[^`]+`|\b\w+\(\)|\b[a-z]+_[a-z_]+\b|\.\w{2,4}\b")]
+    private static partial Regex Code();
 
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex Tags();

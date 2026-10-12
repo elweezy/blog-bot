@@ -42,10 +42,18 @@ public sealed class BlogWriterService
     private readonly bool _dryRun = Environment.GetEnvironmentVariable("DRY_RUN") == "1";
     private readonly bool _requireMermaidValidation = Environment.GetEnvironmentVariable("REQUIRE_MERMAID_VALIDATION") == "1";
 
-    // Two different models check claims independently; a claim survives only if both accept it.
-    private readonly string[] _verifierModels =
-        (Environment.GetEnvironmentVariable("GEMINI_VERIFIER_MODELS") is { Length: > 0 } v ? v : "gemini-3.8-flash,gemini-2.5-flash")
-        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    // Two independent fact-checkers; a claim survives only if both accept it. Each checker has a fallback list
+    // (checkers separated by ';', fallbacks by ','), and the two never use the same model.
+    private readonly string[][] _verifierSlots =
+        (Environment.GetEnvironmentVariable("GEMINI_VERIFIER_MODELS") is { Length: > 0 } v
+            ? v
+            : "gemini-3.8-flash,gemini-3.6-flash;gemini-2.5-flash,gemini-3.6-flash")
+        .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(slot => slot.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        .ToArray();
+
+    // The models that actually did the fact-check in this run, for the summary.
+    private readonly List<string> _usedVerifiers = new();
 
     public BlogWriterService(
         TopicDiscoveryService discovery,
@@ -330,23 +338,64 @@ public sealed class BlogWriterService
 
         VerificationSummary =
             $"{claims.Count - rejectedCited.Count}/{claims.Count} cited and {uncited.Count - rejectedUncited.Count}/{uncited.Count} " +
-            $"uncited sentences kept after checks by {string.Join(" and ", _verifierModels)}, " +
+            $"uncited sentences kept after checks by {string.Join(" and ", _usedVerifiers)}, " +
             $"{keptDiagrams}/{diagrams.Count} diagrams kept, teaser {teaserNote}";
         Console.WriteLine($"Fact-check: {VerificationSummary}.");
 
         return new GeneratedPost { Markdown = markdown, Description = description, Tags = post.Tags };
     }
 
+    /// <summary>
+    /// Runs every check past each fact-checker slot. A slot falls back to its next model when one is unavailable,
+    /// but never to a model another slot already used, so the two verdicts stay independent. Items a model skips
+    /// are asked again once; anything still unanswered counts as rejected. Throws when a slot has no usable model,
+    /// so nothing is published without two independent checks.
+    /// </summary>
     private async Task<Dictionary<int, string>> RejectedByAnyVerifierAsync(List<ClaimCheck> checks, CancellationToken ct)
     {
         var rejected = new Dictionary<int, string>();
-        foreach (var model in _verifierModels)
+        var usedThisRound = new List<string>();
+
+        foreach (var slot in _verifierSlots)
         {
-            var verdicts = await _llm.VerifyClaimsAsync(checks, model, ct);
+            List<ClaimVerdict>? verdicts = null;
+            foreach (var model in slot.Where(m => !usedThisRound.Contains(m)))
+            {
+                try
+                {
+                    verdicts = await _llm.VerifyClaimsAsync(checks, model, ct);
+
+                    var missing = checks.Where(c => verdicts.All(v => v.Id != c.Id)).ToList();
+                    if (missing.Count > 0)
+                    {
+                        Console.WriteLine($"  {model} skipped {missing.Count} item(s); asking again for those.");
+                        verdicts.AddRange(await _llm.VerifyClaimsAsync(missing, model, ct));
+                    }
+
+                    foreach (var unanswered in checks.Where(c => verdicts.All(v => v.Id != c.Id)))
+                        rejected.TryAdd(unanswered.Id, $"{model}: no verdict given, treated as unverified");
+
+                    usedThisRound.Add(model);
+                    break;
+                }
+                catch (InvalidOperationException ex) when (!ct.IsCancellationRequested)
+                {
+                    Console.WriteLine($"  fact-checker {model} unavailable ({Truncate(ex.Message.Split('\n')[0], 120)}); trying the next one.");
+                    verdicts = null;
+                }
+            }
+
+            if (verdicts is null)
+                throw new InvalidOperationException(
+                    $"No usable fact-checker for slot [{string.Join(", ", slot)}] distinct from [{string.Join(", ", usedThisRound)}]; " +
+                    "not publishing a post that was checked fewer than twice.");
+
             foreach (var verdict in verdicts.Where(v => !v.Supported))
-                rejected.TryAdd(verdict.Id, $"{model}: {verdict.Reason}");
+                rejected.TryAdd(verdict.Id, $"{usedThisRound[^1]}: {verdict.Reason}");
         }
 
+        _usedVerifiers.Clear();
+        _usedVerifiers.AddRange(usedThisRound);
         return rejected;
     }
 

@@ -164,16 +164,23 @@ public sealed class GeminiClient : ILlmClient
             }
         };
 
-        var payload = JsonSerializer.Serialize(claims.Select(c => new { id = c.Id, kind = c.Kind, text = c.Text, evidence = c.Evidence }));
+        // Models handle a plain 0..n-1 numbering far better than our internal ids (-1, 10000, ...), so the
+        // verifier sees positions and the answers are mapped back.
+        var payload = JsonSerializer.Serialize(claims.Select((c, i) => new { id = i, kind = c.Kind, text = c.Text, evidence = c.Evidence }));
 
-        // Only this one model: two different models each give an independent verdict.
-        return CallAsync($"fact-check", Prompts.VerifierSystem, Prompts.VerifierUser(payload), schema, json =>
+        // Only this one model: each verifier slot gives an independent verdict. Partial answers are returned as-is;
+        // the caller asks again for anything missing.
+        return CallAsync("fact-check", Prompts.VerifierSystem, Prompts.VerifierUser(payload), schema, json =>
         {
             var verdicts = JsonSerializer.Deserialize<List<ClaimVerdict>>(json, JsonOptions) ?? [];
-            var missing = claims.Select(c => c.Id).Except(verdicts.Select(v => v.Id)).ToList();
-            if (missing.Count > 0)
-                throw new JsonException($"Verifier skipped claims {string.Join(", ", missing)}.");
-            return verdicts;
+            if (verdicts.Count == 0)
+                throw new JsonException("Verifier returned no verdicts.");
+
+            return verdicts
+                .Where(v => v.Id >= 0 && v.Id < claims.Count)
+                .DistinctBy(v => v.Id)
+                .Select(v => new ClaimVerdict { Id = claims[v.Id].Id, Supported = v.Supported, Reason = v.Reason })
+                .ToList();
         }, ct, [model]);
     }
 

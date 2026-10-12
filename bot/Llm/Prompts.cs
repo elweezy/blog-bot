@@ -111,7 +111,8 @@ public static class Prompts
         [[S1: "exact words copied from source 1"]]
         - S1, S2, S3 are the source labels in the source material. The quoted words must be copied character for
           character from that source: at least a few words, ideally the whole sentence that supports the claim.
-        - Put the marker right before the sentence's final punctuation. Several markers on one sentence are fine.
+        - One quote per marker. Put the marker right before the sentence's final punctuation. For two quotes, use two
+          markers: [[S1: "first passage"]] [[S1: "second passage"]].
         - Cite facts, figures, quotes, and descriptions of how someone's project works. Don't cite your own opinions
           ("I think..."), your Draft design assumptions, or general reasoning.
         - A sentence must say no more than its quote supports: same numbers, same meaning, same conditions, same

@@ -196,6 +196,7 @@ public sealed class BlogWriterService
         LogIssues("Draft", issues);
 
         var current = draft;
+        GeneratedPost? clean = null; // first edit with no blocking issues, kept in case a polish pass makes things worse
         for (var attempt = 1; attempt <= MaxEditAttempts; attempt++)
         {
             var post = await _llm.EditPostAsync(topic, current, sourceMaterial, authorProfile,
@@ -206,7 +207,18 @@ public sealed class BlogWriterService
             LogIssues($"Edit {attempt}", issues);
 
             if (!issues.Any(i => i.Blocking))
-                return post;
+            {
+                // Minor issues (a banned word, missing opinions) get one more polish pass while attempts remain.
+                if (issues.Count == 0 || clean is not null || attempt == MaxEditAttempts)
+                    return post;
+
+                clean = post;
+                current = post.Markdown;
+                continue;
+            }
+
+            if (clean is not null)
+                return clean;
 
             // Keep editing the edited text only if it still looks like a full post; otherwise go back to the draft.
             var lostStructure = issues.Any(i => i.Message.StartsWith("No ```mermaid") || i.Message.StartsWith("Missing the"));

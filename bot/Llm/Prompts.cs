@@ -42,6 +42,15 @@ public static class Prompts
           "My guess is..."), never as established fact.
         - Every price, latency, percentage, multiplier or count must come from the sources. The only exception is a
           sentence that states an explicit assumption ("Assume 20k requests a day...").
+        - When describing how a specific project or team's setup works, state only what its sources say. Don't add
+          components, routing rules, workflows or motivations they never mentioned. If you want to propose how it
+          could work, do that in the Draft design and present it as your design.
+        - Keep every claim attached to the person who made it. Different commenters' setups, tools and results are
+          separate; never merge them into one description (one person's "Radiance by X" is not another person's
+          "fork of Radiance").
+        - One case is one case. Don't turn a single build, benchmark or company into a rule for everyone ("teams
+          should..."); say what that case shows and, if you generalize, mark it as your opinion.
+        - Don't state generalizations about what "most teams" do or what "usually" happens unless a source says so.
         """;
 
     private static string Voice => $"""
@@ -55,6 +64,7 @@ public static class Prompts
         - Plain words: "use" not "leverage", "fast" not "performant", "solid" or nothing instead of "robust".
         - Never use: {string.Join(", ", PostSanitizer.BannedPhraseLabels)}.
         - At most two em dashes in the whole post; prefer commas, periods or parentheses. No emoji.
+        - Write units one way throughout (for example always "tok/s", never a mix of "tok/s" and "t/s").
         - No rhetorical triads ("faster, cheaper, and safer"), no "not X, but Y" flourishes, no colon-then-reveal
           sentences, no section that ends with a one-line summary of itself.
         - Don't end with a summary or "In conclusion". End on a concrete recommendation, the first thing you'd test,
@@ -74,6 +84,9 @@ public static class Prompts
         - Use `flowchart LR`, `flowchart TD`, `sequenceDiagram` or `stateDiagram-v2`. No styling, no classDef, no
           colors, no %%{init}%% directives, no HTML or markdown inside labels. Wrap labels containing punctuation in
           double quotes: A["Rerank (top 20)"]. Node ids are plain words without spaces.
+        - A diagram of a specific project's setup may only contain components its sources describe. Diagrams of
+          your own proposal belong in the Draft design.
+        - Every diagram must show something the others don't; never repeat a near-identical flowchart.
         - Directly under each diagram, on its own line, one italic caption that says what to notice, starting with
           "Figure:". Example: *Figure: The cache sits in front of the reranker, so a hit skips two model calls.*
         """;
@@ -189,7 +202,9 @@ public static class Prompts
         - be about practical AI engineering: LLM apps, agents and tool use, RAG and retrieval, evals, inference cost and
           latency, open-weight and local models, fine-tuning, AI inside backend systems, developer tooling;
         - make a specific, arguable point engineers disagree about, and one the cited items actually support. Don't
-          turn "the source compared A and B" into a claim about C. Bad: "The Future of AI Agents". Good: "A single
+          turn "the source compared A and B" into a claim about C, and don't turn one team's build or one benchmark
+          into advice for everyone ("Why teams should..."): say what the case shows ("What an $18k four-GPU box
+          does for a 10-person team"). Bad: "The Future of AI Agents". Good: "A single
           tool-calling loop beats a multi-agent setup for most internal tools";
         - skip AI policy, funding, company drama, career advice, release hype without engineering substance, and
           research results with no practical consequence.

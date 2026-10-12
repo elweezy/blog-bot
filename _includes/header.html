@@ -1,6 +1,11 @@
 <header class="site-header">
   <div class="wrapper">
-    <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
-    <a class="feed-link" href="{{ '/feed.xml' | relative_url }}">Feed</a>
+    <a class="site-title" href="{{ '/' | relative_url }}">Elvin Jamalov <span>/ AI engineering notes</span></a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="{{ '/' | relative_url }}" {% if page.url == '/' %}aria-current="page"{% endif %}>Posts</a>
+      <a href="{{ '/tags/' | relative_url }}" {% if page.url == '/tags/' %}aria-current="page"{% endif %}>Tags</a>
+      <a href="{{ '/about/' | relative_url }}" {% if page.url == '/about/' %}aria-current="page"{% endif %}>About</a>
+      <a href="{{ '/feed.xml' | relative_url }}">RSS</a>
+    </nav>
   </div>
 </header>

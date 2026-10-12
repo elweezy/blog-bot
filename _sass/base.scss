@@ -1,64 +1,212 @@
+// ---- Color tokens (light first, dark redefines) ----
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1b2130;
+  --muted: #5a6376;
+  --border: #dde2ea;
+  --accent: #2b55c9;
+  --accent-soft: #e7ecfb;
+  --code-bg: #f0f2f6;
+  --row: #f7f8fb;
+  --grid: rgba(43, 85, 201, 0.07);
+  --syn-comment: #6a737d;
+  --syn-keyword: #cf222e;
+  --syn-string: #0a3069;
+  --syn-number: #0550ae;
+  --syn-func: #8250df;
+  --syn-type: #953800;
+  --syn-name: #1b2130;
+  --syn-add: #116329;
+  --syn-del: #82071e;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1217;
+    --surface: #161a21;
+    --fg: #e3e7ee;
+    --muted: #9aa3b5;
+    --border: #272d38;
+    --accent: #8fabff;
+    --accent-soft: #1b2440;
+    --code-bg: #141820;
+    --row: #13171e;
+    --grid: rgba(143, 171, 255, 0.06);
+    --syn-comment: #8b949e;
+    --syn-keyword: #ff7b72;
+    --syn-string: #a5d6ff;
+    --syn-number: #79c0ff;
+    --syn-func: #d2a8ff;
+    --syn-type: #ffa657;
+    --syn-name: #e3e7ee;
+    --syn-add: #7ee787;
+    --syn-del: #ffa198;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1217;
+  --surface: #161a21;
+  --fg: #e3e7ee;
+  --muted: #9aa3b5;
+  --border: #272d38;
+  --accent: #8fabff;
+  --accent-soft: #1b2440;
+  --code-bg: #141820;
+  --row: #13171e;
+  --grid: rgba(143, 171, 255, 0.06);
+  --syn-comment: #8b949e;
+  --syn-keyword: #ff7b72;
+  --syn-string: #a5d6ff;
+  --syn-number: #79c0ff;
+  --syn-func: #d2a8ff;
+  --syn-type: #ffa657;
+  --syn-name: #e3e7ee;
+  --syn-add: #7ee787;
+  --syn-del: #ffa198;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: $font-body;
-  background: $background-dark;
-  color: $text-light;
   margin: 0;
-  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: $font-body;
+  font-size: 1.125rem; // 18px
   line-height: 1.7;
-  font-size: 1rem;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
-  color: $accent;
-  text-decoration: none;
-  transition: color 0.2s ease;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
 
   &:hover {
-    color: lighten($accent, 10%);
+    text-decoration-thickness: 2px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 }
 
 h1,
 h2,
 h3,
-h4,
-h5,
-h6 {
-  margin-top: 2rem;
-  margin-bottom: 1rem;
+h4 {
+  font-family: $font-ui;
   font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin: 2.2em 0 0.6em;
 }
 
-p {
-  margin-bottom: 1rem;
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.2rem; }
+h4 { font-size: 1rem; }
+
+p,
+ul,
+ol {
+  margin: 0 0 1.1em;
+}
+
+ul,
+ol {
+  padding-left: 1.4em;
+}
+
+li + li {
+  margin-top: 0.3em;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+
+blockquote {
+  margin: 1.5em 0;
+  padding: 0.2em 0 0.2em 1.1em;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
 }
 
 code,
-pre {
+pre,
+kbd {
   font-family: $font-code;
-  background: #161b22;
-  color: $text-light;
+  font-size: 0.85em;
+}
+
+:not(pre) > code {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
   border-radius: 4px;
+  padding: 0.1em 0.35em;
+  overflow-wrap: anywhere;
 }
 
 pre {
-  padding: 1rem;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: $radius;
+  padding: 1rem 1.1rem;
   overflow-x: auto;
+  line-height: 1.55;
+  margin: 1.5em 0;
 }
 
-/* Centered column, text left-aligned */
-.wrapper {
-  max-width: $container-width;
-  margin: 0 auto; // 👈 center everything (header, body, footer)
-  padding: $spacing-unit;
+pre code {
+  font-size: 0.82rem;
 }
 
-ul {
-  margin: 0 0 1rem 1.5rem;
-  padding: 0;
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: $font-ui;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
-li {
-  margin-bottom: 0.4rem;
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

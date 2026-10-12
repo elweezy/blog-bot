@@ -1,14 +1,15 @@
-﻿---
+---
 layout: post
 title: "Building Resilient .NET HTTP Clients with IHttpClientFactory and Polly"
 date: 2025-11-10 21:35:08 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/karnafun/building-a-secure-stripe-checkout-integration-with-aspnet-core-and-webhook-handling-ga3"
+sources:
+  - "https://dev.to/karnafun/building-a-secure-stripe-checkout-integration-with-aspnet-core-and-webhook-handling-ga3"
 ---
 
-The phone buzzed, a familiar dread creeping in. "Production alert: ExternalUserService timeout exceeded." Not the first time, not the last. This particular API, a crucial dependency for our customer portal, had a knack for intermittent slowness, sometimes just outright drops. Before IHttpClientFactory, these outages meant a frantic dance of restarting services, checking server logs for connection exhaustion, and praying to the DNS gods that the cached entries would eventually refresh. It was brittle, exhausting, and frankly, amateur hour for a system handling millions of requests daily.
+An external API that times out intermittently is one of the most common reasons a .NET service falls over. Before `IHttpClientFactory`, teams typically handled those outages by restarting services, checking logs for socket exhaustion, and waiting for stale DNS entries to expire. That approach is brittle, and it doesn't hold up for a system handling millions of requests a day.
 
-We've all been there. Building modern .NET applications, especially those embracing microservices or integrating with countless third-party APIs, means living in a world of distributed systems. And in distributed systems, failure isn't an exception; it's the default state. Networks glitch, APIs become momentarily unavailable, services get overloaded. Expecting perfect uptime from every dependency is a fantasy that will inevitably crash your carefully crafted application. This isn't just about robustness; it's about system stability, user experience, and ultimately, your sanity.
+Building modern .NET applications, especially those embracing microservices or integrating with countless third-party APIs, means living in a world of distributed systems. And in distributed systems, failure isn't an exception; it's the default state. Networks glitch, APIs become momentarily unavailable, services get overloaded. Expecting perfect uptime from every dependency is a fantasy that will inevitably crash your carefully crafted application. This isn't just about robustness; it's about system stability, user experience, and ultimately, your sanity.
 
 That's where `IHttpClientFactory` and Polly step in. For too long, `HttpClient` was a footgun in the hands of many .NET developers. Instantiating `new HttpClient()` in a `using` block for every request led to socket exhaustion and slow DNS resolution. Creating a singleton `HttpClient` risked stale DNS caches and other lifetime issues. `IHttpClientFactory`, introduced in .NET Core 2.1, finally provided a sane, managed approach to `HttpClient` lifecycle, pooling connections, and injecting configuration. But even a well-managed `HttpClient` can't magically make a flaky external service reliable. That's a job for resilience policies, and Polly is the undisputed champion in the .NET ecosystem for that.
 

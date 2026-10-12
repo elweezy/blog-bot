@@ -14,19 +14,48 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Posts waiting in unmerged PRs live on auto/* branches; the bot reads them so it won't repeat a topic.
+      - name: Fetch pending post branches
+        run: git fetch --depth=1 origin '+refs/heads/auto/*:refs/remotes/origin/auto/*' || true
+
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Run blog bot
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Renders every Mermaid diagram before publishing, so broken diagrams never reach the site.
+      - name: Install mermaid-cli
         run: |
-          cd bot
-          dotnet run --configuration Release
+          npm install -g @mermaid-js/mermaid-cli@12 puppeteer@25
+          echo '{"args":["--no-sandbox"]}' > "$RUNNER_TEMP/puppeteer.json"
+
+      - name: Run blog bot
+        id: bot
+        working-directory: bot
+        run: dotnet run --configuration Release
         env:
-          GEMINI_API_KEY: "${{ secrets.GEMINI_API_KEY }}"
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
+          MERMAID_PUPPETEER_CONFIG: ${{ runner.temp }}/puppeteer.json
+          REQUIRE_MERMAID_VALIDATION: "1"
+
       - name: Create Pull Request
+        if: steps.bot.outputs.post_title != ''
         uses: peter-evans/create-pull-request@v7
         with:
-          commit-message: "chore: add auto-generated blog post"
-          branch: "auto/blog-post"
-          title: "Generated blog post"
-          body: "This PR adds a new blog post."
+          commit-message: "post: ${{ steps.bot.outputs.post_title }}"
+          branch: auto/post-${{ github.run_id }}
+          delete-branch: true
+          title: "New post: ${{ steps.bot.outputs.post_title }}"
+          body: |
+            New post: `${{ steps.bot.outputs.post_path }}`
+
+            **LinkedIn / RSS summary** (Zapier posts this text with the link):
+
+            > ${{ steps.bot.outputs.post_description }}
+
+            Merge this before the next run if you can. Unmerged posts are still counted, so they won't be written again.

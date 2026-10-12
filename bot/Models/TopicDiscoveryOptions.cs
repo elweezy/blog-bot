@@ -3,48 +3,42 @@ namespace BlogBot.Models;
 public sealed class TopicDiscoveryOptions
 {
     /// <summary>
-    /// Stack Exchange site parameter, e.g. "stackoverflow".
+    /// Only consider items published within this many days.
     /// </summary>
-    public string StackExchangeSite { get; set; } = "stackoverflow";
+    public int LookbackDays { get; set; } = 7;
 
     /// <summary>
-    /// Semicolon separated tags for Stack Overflow, e.g. ".net;c#".
+    /// Hacker News (Algolia API) search queries; results are merged and de-duplicated.
     /// </summary>
-    public string StackOverflowTags { get; set; } = ".net;c#";
+    public List<string> HackerNewsQueries { get; set; } = ["LLM", "AI agent", "RAG", "inference", "fine-tuning", "evals"];
 
     /// <summary>
-    /// Optional Stack Exchange API key to increase quota.
-    /// See https://api.stackexchange.com/docs for details.
+    /// Minimum HN points for a story to be considered.
     /// </summary>
-    public string? StackExchangeKey { get; set; }
+    public int HackerNewsMinPoints { get; set; } = 30;
+
+    public int HackerNewsPerQuery { get; set; } = 10;
 
     /// <summary>
-    /// How many Stack Overflow questions to fetch per run (max 100).
+    /// Dev.to tags to pull top articles from.
     /// </summary>
-    public int StackOverflowPageSize { get; set; } = 20;
+    public List<string> DevToTags { get; set; } = ["ai", "llm", "machinelearning"];
+
+    public int DevToPerTag { get; set; } = 15;
 
     /// <summary>
-    /// Dev.to tag to filter by, e.g. "dotnet".
+    /// Subreddits read through their public RSS feed (the JSON API blocks unauthenticated clients).
     /// </summary>
-    public string DevToTag { get; set; } = "dotnet";
+    public List<string> Subreddits { get; set; } = ["LocalLLaMA", "MachineLearning"];
+
+    public int RedditLimit { get; set; } = 15;
+
+    public bool IncludeHuggingFacePapers { get; set; } = true;
+
+    public int HuggingFaceLimit { get; set; } = 15;
 
     /// <summary>
-    /// How many Dev.to articles to fetch per run (1..1000 per docs).
+    /// Maximum number of combined candidates sent to the model.
     /// </summary>
-    public int DevToPageSize { get; set; } = 20;
-
-    /// <summary>
-    /// Subreddit name to query, e.g. "dotnet".
-    /// </summary>
-    public string RedditSubreddit { get; set; } = "dotnet";
-
-    /// <summary>
-    /// How many Reddit posts to fetch per run (Reddit default max is 100).
-    /// </summary>
-    public int RedditLimit { get; set; } = 20;
-
-    /// <summary>
-    /// Maximum number of combined candidates to return (after merging + sorting).
-    /// </summary>
-    public int MaxCombinedCandidates { get; set; } = 50;
+    public int MaxCombinedCandidates { get; set; } = 60;
 }

@@ -1,89 +1,98 @@
 using System.Globalization;
 using System.Text;
 using BlogBot.Models;
+using BlogBot.Utils;
 
 namespace BlogBot.Repository;
 
 public sealed class FileBlogRepository
 {
-    private readonly string _postsDirectory;
+    private static readonly Encoding Utf8NoBom = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
     private readonly string _historyPath;
 
-    public FileBlogRepository(string postsDirectory, string historyPath)
+    public FileBlogRepository(string repoRoot, string postsDirectory, string historyPath, string authorProfilePath)
     {
-        _postsDirectory = postsDirectory;
+        RepoRoot = repoRoot;
+        PostsDirectory = postsDirectory;
         _historyPath = historyPath;
+        AuthorProfilePath = authorProfilePath;
     }
 
-    public TopicHistory LoadHistory()
+    public string RepoRoot { get; }
+    public string PostsDirectory { get; }
+    public string AuthorProfilePath { get; }
+
+    public TopicHistory LoadHistory() => TopicHistory.Load(_historyPath);
+
+    public PostIndex BuildIndex(TopicHistory history) => PostIndex.Build(RepoRoot, PostsDirectory, history);
+
+    /// <summary>
+    /// Returns the author profile without HTML comments (the template's instructions), or null if nothing is filled in.
+    /// </summary>
+    public string? LoadAuthorProfile()
     {
-        return TopicHistory.Load(_historyPath);
+        if (!File.Exists(AuthorProfilePath)) return null;
+
+        var text = System.Text.RegularExpressions.Regex.Replace(
+            File.ReadAllText(AuthorProfilePath), "<!--.*?-->", "", System.Text.RegularExpressions.RegexOptions.Singleline);
+
+        // Headings alone mean the template was never filled in.
+        var hasContent = text.Split('\n').Any(l => !string.IsNullOrWhiteSpace(l) && !l.TrimStart().StartsWith('#'));
+        return hasContent ? text.Trim() : null;
     }
 
-    public void SaveHistory(TopicHistory history)
+    public string CreatePostFile(Topic topic, GeneratedPost post)
     {
-        history.Save(_historyPath);
-    }
-
-    public string CreatePostFile(Topic topic, string markdownBody)
-    {
-        if (!Directory.Exists(_postsDirectory))
-        {
-            Directory.CreateDirectory(_postsDirectory);
-        }
+        Directory.CreateDirectory(PostsDirectory);
 
         var now = DateTime.UtcNow;
-        var slug = Slugify(topic.Title);
-        var fileName = $"{now:yyyy-MM-dd}-{slug}.md";
-        var path = Path.Combine(_postsDirectory, fileName);
+        var slug = Slug.From(topic.Title);
+        var path = Path.Combine(PostsDirectory, $"{now:yyyy-MM-dd}-{slug}.md");
+        for (var n = 2; File.Exists(path); n++)
+            path = Path.Combine(PostsDirectory, $"{now:yyyy-MM-dd}-{slug}-{n}.md");
 
-        var frontMatter = BuildFrontMatter(topic, now);
-        var content = frontMatter + Environment.NewLine + markdownBody.Trim() + Environment.NewLine;
-
-        File.WriteAllText(path, content, Encoding.UTF8);
+        File.WriteAllText(path, Render(topic, post, now), Utf8NoBom);
         return path;
     }
 
-    private static string BuildFrontMatter(Topic topic, DateTime dateUtc)
+    public static string Render(Topic topic, GeneratedPost post, DateTime dateUtc)
     {
-        var dateStr = dateUtc.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-
-        // Basic Jekyll front matter; adjust categories/tags as you like.
         var sb = new StringBuilder();
-        sb.AppendLine("---");
-        sb.AppendLine(@"layout: post");
-        sb.AppendLine($@"title: ""{topic.Title.Replace("\"", "\\\"")}""");
-        sb.AppendLine($"date: {dateStr} +0000");
-        sb.AppendLine("categories: dotnet blog");
-        if (!string.IsNullOrWhiteSpace(topic.PrimaryUrl))
+        sb.Append("---\n");
+        sb.Append("layout: post\n");
+        sb.Append($"title: {Yaml(topic.Title)}\n");
+        sb.Append($"date: {dateUtc.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)} +0000\n");
+        sb.Append("categories: ai\n");
+        sb.Append($"description: {Yaml(post.Description.Trim())}\n");
+        // jekyll-feed (0.15 on GitHub Pages) builds the RSS <summary> from the excerpt, which Zapier posts to LinkedIn.
+        sb.Append($"excerpt: {Yaml(post.Description.Trim())}\n");
+
+        var tags = post.Tags
+            .Select(t => t.Trim().ToLowerInvariant())
+            .Where(t => t.Length > 0)
+            .Distinct()
+            .Take(5)
+            .ToList();
+        if (tags.Count > 0)
+            sb.Append($"tags: [{string.Join(", ", tags.Select(Yaml))}]\n");
+
+        var sources = topic.Sources.Count > 0
+            ? topic.Sources.SelectMany(s => new[] { s.Url, s.DiscussionUrl })
+            : topic.SupportingUrls;
+        var sourceList = sources.OfType<string>().Where(u => u.Length > 0).Distinct().ToList();
+        if (sourceList.Count > 0)
         {
-            sb.AppendLine($@"canonical_url: ""{topic.PrimaryUrl}""");
+            sb.Append("sources:\n");
+            foreach (var url in sourceList)
+                sb.Append($"  - {Yaml(url)}\n");
         }
 
-        sb.AppendLine("---");
+        sb.Append("---\n\n");
+        sb.Append(post.Markdown.Trim()).Append('\n');
         return sb.ToString();
     }
 
-    private static string Slugify(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            return "post";
-
-        text = text.ToLowerInvariant();
-        var sb = new StringBuilder();
-        foreach (var c in text)
-        {
-            if (char.IsLetterOrDigit(c))
-            {
-                sb.Append(c);
-            }
-            else if (char.IsWhiteSpace(c) || c == '-' || c == '_')
-            {
-                sb.Append('-');
-            }
-        }
-
-        var slug = sb.ToString().Trim('-');
-        return string.IsNullOrEmpty(slug) ? "post" : slug;
-    }
+    private static string Yaml(string value) =>
+        "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", " ") + "\"";
 }

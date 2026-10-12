@@ -1,14 +1,13 @@
-﻿---
+---
 layout: post
 title: "Async/Await Best Practices in .NET: Demystifying ConfigureAwait"
 date: 2025-11-06 00:05:11 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/2743260/is-it-possible-to-write-to-the-console-in-colour-in-net"
+sources:
+  - "https://stackoverflow.com/questions/2743260/is-it-possible-to-write-to-the-console-in-colour-in-net"
 ---
 
-# Async/Await Best Practices in .NET: Demystifying ConfigureAwait
-
-I remember a time, not so long ago, when `async` and `await` felt like pure magic. Suddenly, my applications weren't freezing up, and I could fetch data or run long computations without my UI turning into a pixelated zombie. It was a revelation. But as with any powerful magic, there's always a hidden incantation, a nuance that can turn a smooth operation into a frustrating head-scratcher. For me, and I suspect for many of you, that nuance often comes down to `ConfigureAwait(false)`.
+`async` and `await` made non-blocking code look almost like synchronous code: UIs stopped freezing, and I/O-bound work stopped tying up threads. The part that still trips people up is `ConfigureAwait(false)`: when you need it, when it does nothing, and when leaving it out causes a deadlock.
 
 You might think you understand `async`/`await` completely, and for 90% of scenarios, you probably do. But then you hit that deadlock in a desktop app, or you're chasing down a performance bottleneck in a high-throughput API, and suddenly `ConfigureAwait(false)` jumps out as the thing you *should* have been thinking about. It's not just an esoteric detail; it's a fundamental aspect of writing robust, performant, and maintainable asynchronous code in .NET.
 

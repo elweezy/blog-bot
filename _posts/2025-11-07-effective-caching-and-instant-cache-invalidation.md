@@ -1,9 +1,10 @@
-﻿---
+---
 layout: post
 title: "Effective Caching and Instant Cache Invalidation"
 date: 2025-11-07 13:13:38 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/karnafun/building-an-oauth2-protected-api-with-c-identityserver-and-aspnet-core-23g2"
+sources:
+  - "https://dev.to/karnafun/building-an-oauth2-protected-api-with-c-identityserver-and-aspnet-core-23g2"
 ---
 
 You know the drill. You're building a sleek .NET API, and everything's humming along, fast and responsive. Then, naturally, you hit the database or an external service one too many times. "Ah-ha!" you exclaim, "Caching to the rescue!" You sprinkle some `IMemoryCache` magic, and suddenly your endpoints are blazing fast. Life is good.
@@ -202,4 +203,4 @@ Effective caching is always a balancing act: performance versus freshness. `IMem
 
 It empowers you to build highly performant applications without sacrificing data consistency or security. Just remember the distributed nature of modern applications and choose the right tool for the job. For in-process, surgical invalidation, this pattern is golden. For cross-instance invalidation, layer a distributed cache and a pub/sub mechanism on top.
 
-Go forth, cache wisely, and keep your data fresh! What's your go-to strategy for cache invalidation in complex systems? I'd love to hear your war stories and solutions in the comments below.
+If you take one thing from this: decide how each cache entry gets invalidated before you decide how it gets populated.

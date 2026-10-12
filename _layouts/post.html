@@ -4,9 +4,124 @@ layout: default
 
 <article class="post">
   <header class="post-header">
-    <h1 class="post-title">{{ page.title }}</h1>
-    <p class="post-meta">{{ page.date | date: "%b %-d, %Y" }}</p>
+    <h1>{{ page.title }}</h1>
+    {% if page.description %}<p class="lede">{{ page.description }}</p>{% endif %}
+    <div class="meta">
+      <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%b %-d, %Y" }}</time>
+      <span aria-hidden="true">·</span>
+      <span>{% include reading-time.html content=content %}</span>
+      {% if page.tags.size > 0 %}
+      <ul class="tag-list" aria-label="Tags">
+        {% for tag in page.tags %}<li><a href="{{ '/tags/' | relative_url }}#{{ tag | slugify }}">{{ tag }}</a></li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
   </header>
 
   <div class="post-content">{{ content }}</div>
+
+  <footer class="post-footer">
+    {% if page.sources.size > 0 %}
+    <section>
+      <h2>Sources</h2>
+      <ol>
+        {% for url in page.sources %}<li><a href="{{ url }}" rel="noopener">{{ url | remove_first: "https://" | remove_first: "www." | truncate: 80 }}</a></li>{% endfor %}
+      </ol>
+    </section>
+    {% endif %}
+
+    <section>
+      <h2>Share</h2>
+      <div class="share">
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ page.url | absolute_url | url_encode }}" rel="noopener">Share on LinkedIn</a>
+        <a href="{{ '/feed.xml' | relative_url }}">Follow via RSS</a>
+      </div>
+    </section>
+
+    {% if page.previous or page.next %}
+    <nav class="post-nav" aria-label="More posts">
+      {% if page.previous %}
+      <a class="prev" href="{{ page.previous.url | relative_url }}"><span>← Older</span><strong>{{ page.previous.title }}</strong></a>
+      {% endif %}
+      {% if page.next %}
+      <a class="next" href="{{ page.next.url | relative_url }}"><span>Newer →</span><strong>{{ page.next.title }}</strong></a>
+      {% endif %}
+    </nav>
+    {% endif %}
+  </footer>
 </article>
+
+<script type="module">
+  // Turn ```mermaid fences into hand-drawn diagrams, and the "*Figure: ...*" line under each into its caption.
+  const hosts = new Set();
+  document.querySelectorAll(".post-content div.language-mermaid, .post-content pre > code.language-mermaid")
+    .forEach((el) => hosts.add(el.closest("div.language-mermaid") || el.closest("pre")));
+
+  if (hosts.size > 0) {
+    hosts.forEach((host) => {
+      const figure = document.createElement("figure");
+      figure.className = "diagram";
+      const pre = document.createElement("pre");
+      pre.className = "mermaid";
+      pre.textContent = host.textContent.trim();
+      figure.appendChild(pre);
+
+      const next = host.nextElementSibling;
+      const text = next && next.tagName === "P" ? next.textContent.trim() : "";
+      if (/^Figure:/i.test(text)) {
+        const caption = document.createElement("figcaption");
+        const label = document.createElement("b");
+        label.textContent = "Figure. ";
+        caption.append(label, text.replace(/^Figure:\s*/i, ""));
+        figure.appendChild(caption);
+        next.remove();
+      }
+      host.replaceWith(figure);
+    });
+
+    const { default: mermaid } = await import("https://cdn.jsdelivr.net/npm/mermaid@12.1.0/dist/mermaid.esm.min.mjs");
+    const token = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      look: "handDrawn",
+      theme: "base",
+      fontFamily: '"IBM Plex Sans", sans-serif',
+      sequence: { mirrorActors: false },
+      themeVariables: {
+        fontSize: "15px",
+        background: token("--surface"),
+        primaryColor: token("--surface"),
+        primaryBorderColor: token("--fg"),
+        primaryTextColor: token("--fg"),
+        secondaryColor: token("--accent-soft"),
+        tertiaryColor: token("--code-bg"),
+        lineColor: token("--muted"),
+        textColor: token("--fg"),
+        edgeLabelBackground: token("--surface"),
+        clusterBkg: token("--code-bg"),
+        clusterBorder: token("--border"),
+        actorBkg: token("--surface"),
+        actorBorder: token("--fg"),
+        actorTextColor: token("--fg"),
+        signalColor: token("--muted"),
+        signalTextColor: token("--fg"),
+        noteBkgColor: token("--accent-soft"),
+        noteTextColor: token("--fg"),
+        noteBorderColor: token("--accent"),
+      },
+    });
+    await mermaid.run({ querySelector: ".diagram pre.mermaid" });
+
+    // Don't shrink wide diagrams below a readable size; let them scroll inside their figure instead.
+    document.querySelectorAll(".diagram svg").forEach((svg) => {
+      const natural = svg.viewBox?.baseVal?.width || 0;
+      const available = svg.closest(".diagram").clientWidth - 40;
+      const readable = Math.round(natural * 0.8);
+      if (readable > available) {
+        svg.style.maxWidth = "none";
+        svg.style.width = readable + "px";
+      }
+    });
+  }
+</script>

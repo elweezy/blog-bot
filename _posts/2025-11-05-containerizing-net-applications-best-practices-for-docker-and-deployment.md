@@ -1,9 +1,10 @@
-﻿---
+---
 layout: post
 title: "Containerizing .NET Applications: Best Practices for Docker and Deployment"
 date: 2025-11-05 19:08:17 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/66585642/net-5-project-docker-copy-file-is-not-found"
+sources:
+  - "https://stackoverflow.com/questions/66585642/net-5-project-docker-copy-file-is-not-found"
 ---
 
 You've just finished a killer new feature in your latest .NET 8 (or maybe even .NET 9 preview!) project. It's fast, it's lean, and it's ready for the world. You hit `dotnet run`, and it sings. "Time to put this thing in a container!" you think, beaming.
@@ -14,7 +15,7 @@ You whip up a `Dockerfile`, paste in a few lines you remember from some tutorial
 COPY failed: stat /var/lib/docker/tmp/docker-builder.../src/MyProject/MyProject.csproj: no such file or directory
 ```
 
-Or maybe something even more cryptic, like a `dotnet restore` failing because it can't find the `csproj` at all. Sound familiar? We've all been there. I know I have, more times than I care to admit, especially when moving between different solution structures or upgrading .NET versions. It's one of those rites of passage in modern .NET development.
+Or maybe something even more cryptic, like a `dotnet restore` failing because it can't find the `csproj` at all. Both failures usually show up when the solution structure changes or a .NET version upgrade moves files around, and both come from the same root cause: the Dockerfile's assumptions about paths no longer match the repository.
 
 The promise of containers is immense: consistent environments, simplified deployments, scaling superpowers. But getting that initial `Dockerfile` right, especially for a non-trivial .NET solution, can feel like navigating a minefield. Today, let's cut through the noise, demystify that dreaded `COPY` error, and lay down some rock-solid best practices for containerizing your .NET applications for optimal performance and sanity.
 

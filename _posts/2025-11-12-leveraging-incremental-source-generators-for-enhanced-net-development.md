@@ -1,14 +1,15 @@
-﻿---
+---
 layout: post
 title: "Leveraging Incremental Source Generators for Enhanced .NET Development"
 date: 2025-11-12 03:22:16 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/roxeem/incremental-source-generators-in-net-38gk"
+sources:
+  - "https://dev.to/roxeem/incremental-source-generators-in-net-38gk"
 ---
 
-It used to be that extending a framework or automating boilerplate meant reaching for reflection, IL weaving, or — heaven forbid — T4 templates run as pre-build steps. I’ve spent countless hours debugging `MissingMethodException`s in production, tracing back to some runtime magic that didn't quite line up with a release build, or trying to explain why a build server was churning for minutes on end due to a custom code generator script. The developer experience was often… less than ideal.
+It used to be that extending a framework or automating boilerplate meant reaching for reflection, IL weaving, or — heaven forbid — T4 templates run as pre-build steps. Those approaches fail late: a `MissingMethodException` in production because runtime magic didn't line up with a release build, or a build server churning for minutes because of a custom code generator script. The developer experience was often… less than ideal.
 
-Then came .NET source generators. And while the initial versions were a revelation, they still felt a bit like a blunt instrument. Regenerating *everything* on every small change could be sluggish, particularly in larger solutions. It wasn't until `IIncrementalGenerator` landed that I truly saw the paradigm shift possible. This wasn't just about moving code generation to compile-time; it was about doing it *smartly*, efficiently, and in a way that truly integrated into the IDE experience without grinding it to a halt.
+Then came .NET source generators. And while the initial versions were a revelation, they still felt a bit like a blunt instrument. Regenerating *everything* on every small change could be sluggish, particularly in larger solutions. `IIncrementalGenerator` is what made them practical. This wasn't just about moving code generation to compile-time; it was about doing it *smartly*, efficiently, and in a way that truly integrated into the IDE experience without grinding it to a halt.
 
 ### Why Incremental Generators are a Game Changer Now
 
@@ -296,7 +297,7 @@ namespace MyApi.Generator
 
 To use this, you'd create a new .NET Standard 2.0 or 2.1 class library project for `MyApi.Generator`, add `Microsoft.CodeAnalysis.CSharp` (and potentially `Microsoft.CodeAnalysis.Analyzers`) NuGet package, reference `MyApi.Common` (for the attribute) and then reference `MyApi.Generator` in your main `MyApi` project using `<ProjectReference Include="..\MyApi.Generator\MyApi.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />`.
 
-### Pitfalls & Best Practices I've Learned the Hard Way
+### Pitfalls and how to avoid them
 
 Working with source generators isn't always smooth sailing. Here are some lessons from the trenches:
 

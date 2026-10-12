@@ -1,14 +1,15 @@
-﻿---
+---
 layout: post
 title: "Real-time Data Streaming with .NET SignalR and Reverse Proxies"
 date: 2025-11-05 17:30:26 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/morteza-jangjoo/real-time-streaming-in-net-signalr-live-data-like-trading-apps-45h4"
+sources:
+  - "https://dev.to/morteza-jangjoo/real-time-streaming-in-net-signalr-live-data-like-trading-apps-45h4"
 ---
 
 When you're building modern web applications, the demand for immediate, live feedback isn't just a nice-to-have anymore; it's practically a requirement. Think about it: a trading dashboard showing real-time price fluctuations, a live sports score tracker, a collaborative document editor, or even just a busy chat application. Users expect instant updates, and anything less feels… sluggish, even broken.
 
-That's where technologies like SignalR come into play. It's Microsoft's elegant solution to real-time communication in .NET, abstracting away the complexities of WebSockets, long polling, and Server-Sent Events into a beautiful, easy-to-use API. But here's the thing: while SignalR makes the *development* part simple, deploying it for high-performance, real-time data streaming, especially behind reverse proxies, often unearths some interesting quirks. And trust me, I've spent more than a few late nights debugging connection issues that turned out to be a single missing header in an Nginx config.
+That's where technologies like SignalR come into play. It's Microsoft's elegant solution to real-time communication in .NET, abstracting away the complexities of WebSockets, long polling, and Server-Sent Events into a beautiful, easy-to-use API. But here's the thing: while SignalR makes the *development* part simple, deploying it for high-performance, real-time data streaming, especially behind reverse proxies, often unearths some interesting quirks. A surprising number of connection failures come down to a single missing header in an Nginx config.
 
 ### Why Real-time Streaming Matters More Than Ever (Especially in .NET 8/9)
 

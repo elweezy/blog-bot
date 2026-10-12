@@ -1,10 +1,11 @@
 # ---- Basic site info ----
-title: "A .NET and backend engineering blog with Elvin"
+title: "Elvin Jamalov · AI engineering notes"
 author: "Elvin Jamalov"
 email: dzhamalov.elvin@gmail.com
 url: "https://elweezystack.net" # main domain
 baseurl: ""
-tagline: "Pragmatic .NET, backend, and automation notes"
+tagline: "Agents, retrieval, evals and inference, written for engineers who ship software."
+description: "Practical notes on building software with LLMs: agents, RAG, evals, inference cost and the backend around them."
 timezone: "UTC"
 lang: "en"
 
@@ -47,8 +48,6 @@ defaults:
     values:
       layout: post
       author: "Elvin"
-      category: dotnet
-      tags: [".NET", "C#", "Backend", "Automation"]
 
 # ---- Exclusions ----
 exclude:
@@ -59,3 +58,10 @@ exclude:
   - LICENSE
   - "*.sln"
   - "*.csproj"
+  - Gemfile
+  - Gemfile.lock
+  - vendor/
+
+# ---- Feed (Zapier posts each new item to LinkedIn) ----
+feed:
+  excerpt_only: true

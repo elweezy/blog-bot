@@ -55,3 +55,14 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# IDEs
+.idea/
+.vscode/
+*.DotSettings.user
+
+# Jekyll (local builds)
+_site/
+.jekyll-cache/
+.jekyll-metadata
+.sass-cache/

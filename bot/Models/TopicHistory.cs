@@ -2,6 +2,9 @@ using System.Text.Json;
 
 namespace BlogBot.Models;
 
+/// <summary>
+/// Legacy topic history (meta/topics_history.json). Read-only: new posts are tracked through their front matter.
+/// </summary>
 public sealed class TopicHistory
 {
     public List<HistoryItem> Items { get; set; } = new();
@@ -9,6 +12,8 @@ public sealed class TopicHistory
     public sealed class HistoryItem
     {
         public string TopicId { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public List<string> SourceUrls { get; set; } = new();
         public DateTime UsedAtUtc { get; set; }
     }
 
@@ -17,21 +22,6 @@ public sealed class TopicHistory
         PropertyNameCaseInsensitive = true,
         WriteIndented = true
     };
-
-    public bool IsRecentlyUsed(string topicId, int days)
-    {
-        var cutoff = DateTime.UtcNow.AddDays(-days);
-        return Items.Any(i => i.TopicId == topicId && i.UsedAtUtc >= cutoff);
-    }
-
-    public void Add(string topicId)
-    {
-        Items.Add(new HistoryItem
-        {
-            TopicId = topicId,
-            UsedAtUtc = DateTime.UtcNow
-        });
-    }
 
     public static TopicHistory Load(string path)
     {
@@ -69,15 +59,4 @@ public sealed class TopicHistory
         }
     }
 
-    public void Save(string path)
-    {
-        var dir = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
-
-        var json = JsonSerializer.Serialize(this, JsonOptions);
-        File.WriteAllText(path, json);
-    }
 }

@@ -1,12 +1,13 @@
-﻿---
+---
 layout: post
 title: "Applying SOLID Principles and Design Patterns in Modern C# Development"
 date: 2025-11-06 13:15:27 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/gigaherz/automate-data-auditing-in-your-dal-learn-to-separate-technical-vs-business-logical-crud-use-c-2pf2"
+sources:
+  - "https://dev.to/gigaherz/automate-data-auditing-in-your-dal-learn-to-separate-technical-vs-business-logical-crud-use-c-2pf2"
 ---
 
-Let's be honest, we've all been there. You start a new project, everything's clean, pristine. You're thinking, "This time, it'll be different!" Then, slowly but surely, entropy kicks in. Requirements shift, new features get bolted on, and before you know it, that elegant little application has transformed into a sprawling spaghetti monster that's terrifying to touch.
+You start a new project, everything's clean, pristine. You're thinking, "This time, it'll be different!" Then, slowly but surely, entropy kicks in. Requirements shift, new features get bolted on, and before you know it, that elegant little application has transformed into a sprawling spaghetti monster that's terrifying to touch.
 
 Debugging becomes an archaeological dig. Adding a new feature feels like performing open-heart surgery with a spork. And god forbid you need to change a core dependency – you might as well rewrite the whole thing.
 

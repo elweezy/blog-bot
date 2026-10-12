@@ -1,23 +1,28 @@
+// Rouge token classes mapped to theme tokens (GitHub-like palette in both themes).
 .highlight {
-  background: #161b22;
-  border-radius: 6px;
-  padding: 1rem;
-  overflow-x: auto;
+  color: var(--syn-name);
 
-  pre {
+  .c, .ch, .cd, .cm, .cpf, .c1, .cs { color: var(--syn-comment); font-style: italic; }
+  .cp { color: var(--syn-keyword); }
+  .k, .kc, .kd, .kn, .kp, .kr, .kv, .ow { color: var(--syn-keyword); }
+  .kt, .nc, .nn, .ne, .nl { color: var(--syn-type); }
+  .s, .sa, .sb, .sc, .dl, .sd, .s2, .se, .sh, .si, .sx, .sr, .s1, .ss { color: var(--syn-string); }
+  .m, .mb, .mf, .mh, .mi, .il, .mo, .mx { color: var(--syn-number); }
+  .nf, .fm, .nd { color: var(--syn-func); }
+  .na, .nb, .bp, .no, .nv, .vc, .vg, .vi, .vm { color: var(--syn-number); }
+  .nt { color: var(--syn-keyword); }
+  .o, .p { color: var(--syn-name); }
+  .gi { color: var(--syn-add); }
+  .gd { color: var(--syn-del); }
+  .gh, .gu { color: var(--syn-func); font-weight: 600; }
+  .err { color: var(--syn-del); }
+}
+
+// Rouge wraps fenced code in div.highlighter-rouge > div.highlight > pre.highlight.
+div.highlighter-rouge {
+  margin: 1.5em 0;
+
+  pre.highlight {
     margin: 0;
-  }
-
-  .k {
-    color: #ff7b72;
-  }
-  .s {
-    color: #a5d6ff;
-  }
-  .n {
-    color: #c9d1d9;
-  }
-  .c {
-    color: #8b949e;
   }
 }

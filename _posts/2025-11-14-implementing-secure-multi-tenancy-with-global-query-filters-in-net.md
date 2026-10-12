@@ -1,9 +1,10 @@
-﻿---
+---
 layout: post
 title: "Implementing Secure Multi-Tenancy with Global Query Filters in .NET"
 date: 2025-11-14 03:23:20 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/gigaherz/building-a-secure-dal-composable-multi-tenancy-filtering-with-c-and-linq2db-19lo"
+sources:
+  - "https://dev.to/gigaherz/building-a-secure-dal-composable-multi-tenancy-filtering-with-c-and-linq2db-19lo"
 ---
 
 Multi-tenant data isolation needs to be baked into the data access layer, not bolted on haphazardly through manual query predicates. And for modern .NET applications leveraging Entity Framework Core, Global Query Filters have emerged as a powerful, elegant, and indeed, _secure_ way to achieve this.
@@ -12,7 +13,7 @@ Multi-tenant data isolation needs to be baked into the data access layer, not bo
 
 The SaaS landscape thrives on efficiency. Sharing infrastructure—like a single database—across multiple tenants significantly reduces operational overhead and cost compared to provisioning a dedicated database for each customer. But this efficiency comes with a monumental responsibility: absolute data isolation. A leak between tenants isn't just a bug; it's a catastrophic security breach that can obliterate trust and ruin a business.
 
-Traditional approaches often involve injecting `WHERE TenantId = @tenantId` clauses into every single query manually, or resorting to more complex patterns like database views or separate schemas. The former is brittle, as my anecdote painfully illustrates. The latter often introduces its own complexities in deployment, schema migrations, and ORM integration, sometimes sacrificing the very cost efficiency we seek.
+Traditional approaches often involve injecting `WHERE TenantId = @tenantId` clauses into every single query manually, or resorting to more complex patterns like database views or separate schemas. The former is brittle: one forgotten predicate in one query is enough to leak another tenant's data. The latter often introduces its own complexities in deployment, schema migrations, and ORM integration, sometimes sacrificing the very cost efficiency we seek.
 
 This is where EF Core's Global Query Filters shine. They offer a declarative, centralized mechanism to apply tenant-specific filtering _automatically_ to every query for a given entity type, right at the ORM level. This isn't just a convenience; it's a security paradigm shift, making data isolation a default, not an optional step.
 

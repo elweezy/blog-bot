@@ -1,68 +1,60 @@
-﻿// See https://aka.ms/new-console-template for more information
-
+using BlogBot.Llm;
 using BlogBot.Models;
-using BlogBot.OpenAI;
 using BlogBot.Repository;
 using BlogBot.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 var builder = Host.CreateApplicationBuilder(args);
+builder.Logging.AddFilter("System.Net.Http", LogLevel.Warning);
 
-// 1. Configure options (you can later bind from appsettings.json if you want)
-builder.Services.Configure<TopicDiscoveryOptions>(opts =>
-{
-    opts.StackExchangeSite = "stackoverflow";
-    opts.StackOverflowTags = ".net;c#";
-    opts.StackExchangeKey = null; // set if you register a SE API key
-    opts.StackOverflowPageSize = 20;
-    opts.DevToTag = "dotnet";
-    opts.DevToPageSize = 20;
-    opts.RedditSubreddit = "dotnet";
-    opts.RedditLimit = 20;
-    opts.MaxCombinedCandidates = 50;
-});
+// 1. Topic sources (defaults live in TopicDiscoveryOptions)
+builder.Services.Configure<TopicDiscoveryOptions>(_ => { });
 
 // 2. HttpClient for TopicDiscoveryService (typed client)
 builder.Services.AddHttpClient<TopicDiscoveryService>(client =>
 {
-    // Good practice: identify yourself to Reddit & others
-    client.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "blog-bot/1.0 (+https://github.com/elweezy/blog-bot)");
+    // Identify the bot; Reddit and others reject anonymous clients.
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("blog-bot/2.0 (+https://github.com/elweezy/blog-bot)");
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 
-// 3. OpenAI client (currently using the mock; swap later with openai api client)
-//builder.Services.AddSingleton<IOpenAIClient, MockOpenAiClient>();
-builder.Services.AddHttpClient<GeminiClient>();
-builder.Services.AddSingleton<IOpenAIClient,GeminiClient>();
+// 3. LLM client: Gemini free tier, or an offline mock for local testing
+if (Environment.GetEnvironmentVariable("USE_MOCK_LLM") == "1")
+{
+    builder.Services.AddSingleton<ILlmClient, MockLlmClient>();
+}
+else
+{
+    // Thinking models can take a while on long posts.
+    builder.Services.AddHttpClient<ILlmClient, GeminiClient>(client => client.Timeout = TimeSpan.FromMinutes(5));
+}
 
-// 4. FileBlogRepository – using environment to get repo root path
+// 4. FileBlogRepository: the bot runs from /bot, so the repo root is its parent
 builder.Services.AddSingleton<FileBlogRepository>(sp =>
 {
-    var env = sp.GetRequiredService<IHostEnvironment>();
-
-    var contentRoot = env.ContentRootPath;
-    Console.WriteLine($"ContentRootPath: {contentRoot}");
-
-    // Go from /.../blog-bot/blog-bot/bot -> /.../blog-bot/blog-bot
+    var contentRoot = sp.GetRequiredService<IHostEnvironment>().ContentRootPath;
     var repoRoot = Directory.GetParent(contentRoot)?.FullName ?? contentRoot;
-    Console.WriteLine($"RepoRoot:        {repoRoot}");
 
-    var postsDir    = Path.Combine(repoRoot, "_posts");
+    var postsDir = Path.Combine(repoRoot, "_posts");
     var historyPath = Path.Combine(repoRoot, "meta", "topics_history.json");
+    var profilePath = Path.Combine(repoRoot, "meta", "author_profile.md");
 
-    Console.WriteLine($"PostsDir:        {postsDir}");
-    Console.WriteLine($"HistoryPath:     {historyPath}");
+    Console.WriteLine($"RepoRoot:    {repoRoot}");
+    Console.WriteLine($"PostsDir:    {postsDir}");
+    Console.WriteLine($"HistoryPath: {historyPath}");
 
-    return new FileBlogRepository(postsDir, historyPath);
+    return new FileBlogRepository(repoRoot, postsDir, historyPath, profilePath);
 });
 
-// 5. BlogWriterService – main orchestrator
+builder.Services.AddSingleton<MermaidValidator>();
+
+// 5. BlogWriterService: main orchestrator
 builder.Services.AddSingleton<BlogWriterService>();
 
 var host = builder.Build();
 
-// optional: support Ctrl+C cancellation
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
 {
@@ -70,9 +62,18 @@ Console.CancelKeyPress += (_, e) =>
     cts.Cancel();
 };
 
-using var scope = host.Services.CreateScope();
-var blogWriter = scope.ServiceProvider.GetRequiredService<BlogWriterService>();
+var blogWriter = host.Services.GetRequiredService<BlogWriterService>();
+var result = await blogWriter.RunAsync(cts.Token);
 
-await blogWriter.RunAsync(cts.Token);
+// Hand the title and LinkedIn description to the workflow for the PR.
+var githubOutput = Environment.GetEnvironmentVariable("GITHUB_OUTPUT");
+if (result is { Path: not null } created && !string.IsNullOrEmpty(githubOutput))
+{
+    var delimiter = $"EOF_{Guid.NewGuid():N}";
+    await File.AppendAllTextAsync(githubOutput,
+        $"post_title={created.Topic.Title.Replace('\n', ' ')}\n" +
+        $"post_path={Path.GetRelativePath(Path.GetDirectoryName(Path.GetDirectoryName(created.Path)!)!, created.Path)}\n" +
+        $"post_description<<{delimiter}\n{created.Post.Description}\n{delimiter}\n");
+}
 
-Console.WriteLine("Blog generation completed.");
+Console.WriteLine(result is null ? "No post generated." : "Blog generation completed.");

@@ -1,15 +1,13 @@
-// ---- Color palette ----
-$background-dark: #0d1117;
-$text-light: #e6edf3;
-$text-muted: #8b949e;
-$accent: #0078d4;
-$border: #21262d;
+// Concept: an engineer's design notebook. Serif for long reading, a technical sans for structure,
+// and diagrams set on faint graph paper like whiteboard sketches.
 
 // ---- Typography ----
-$font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-  sans-serif;
-$font-code: "JetBrains Mono", Consolas, monospace;
+$font-body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+$font-ui: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+$font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-// ---- Layout tokens ----
-$container-width: 720px;
-$spacing-unit: 1.5rem;
+// ---- Layout ----
+$measure: 68ch; // comfortable line length for running text
+$page-width: 46rem;
+$gutter: 1.25rem;
+$radius: 6px;

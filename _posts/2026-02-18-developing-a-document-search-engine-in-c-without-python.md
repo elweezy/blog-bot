@@ -1,12 +1,14 @@
-﻿---
+---
 layout: post
 title: "Developing a Document Search Engine in C# Without Python"
 date: 2026-02-18 03:54:09 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/olafur_aron/build-a-document-search-engine-in-c-without-python-4123"
+sources:
+  - "https://dev.to/olafur_aron/build-a-document-search-engine-in-c-without-python-4123"
+tags: ["rag", "inference", "csharp"]
 ---
 
-We've all been there: a project demands intelligent search over internal documents, product descriptions, or user-generated content. The immediate reflex for many in the modern AI landscape is to reach for a Python-based library – perhaps `sentence-transformers`, `faiss`, or a dedicated vector database service. And for rapid prototyping or specific research tasks, that's often a pragmatic choice. But what happens when that prototype needs to ship into a production .NET ecosystem? Suddenly, the elegance of a Python script dissolves into deployment nightmares, dependency conflicts, environment management headaches, and the performance overhead of inter-process communication.
+A common requirement: intelligent search over internal documents, product descriptions, or user-generated content. The immediate reflex for many in the modern AI landscape is to reach for a Python-based library – perhaps `sentence-transformers`, `faiss`, or a dedicated vector database service. And for rapid prototyping or specific research tasks, that's often a pragmatic choice. But what happens when that prototype needs to ship into a production .NET ecosystem? Suddenly, the elegance of a Python script dissolves into deployment nightmares, dependency conflicts, environment management headaches, and the performance overhead of inter-process communication.
 
 This exact scenario arose on a recent project. The requirement was a low-latency, highly customizable semantic search capability for a specialized document corpus, tightly integrated into an existing .NET 8 microservice architecture. Adding a separate Python service felt like introducing a foreign body, complicating everything from CI/CD pipelines and logging to monitoring and security. Our conviction was clear: if .NET is our platform, we should leverage its strengths. The challenge then became: how do we build an efficient, custom document search engine in C# that leverages modern embedding and retrieval techniques, without touching a single line of Python?
 

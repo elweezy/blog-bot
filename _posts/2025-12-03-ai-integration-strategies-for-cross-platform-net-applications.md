@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "AI Integration Strategies for Cross-Platform .NET Applications"
 date: 2025-12-03 03:31:20 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/paulo_abbcba03b4df70572fc/conectabairro-ai-powered-cross-platform-community-app-for-brazilian-social-impact-191c"
+sources:
+  - "https://dev.to/paulo_abbcba03b4df70572fc/conectabairro-ai-powered-cross-platform-community-app-for-brazilian-social-impact-191c"
+tags: ["llm", "prompting", "dotnet"]
 ---
 
 The landscape of application development has fundamentally shifted. Users no longer just expect applications to perform tasks; they anticipate intelligence, context-awareness, and often, generative capabilities. For us in the .NET ecosystem, especially when building cross-platform UI applications with frameworks like MAUI, WPF, or Blazor Hybrid, embedding AI features—particularly large language models (LLMs)—presents a unique set of architectural and engineering challenges. It's not just about making an API call; it's about crafting a responsive, efficient, and maintainable user experience where the AI feels like an integral part of the application, not an afterthought.

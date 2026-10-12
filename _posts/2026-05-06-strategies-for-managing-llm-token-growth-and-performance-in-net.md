@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Strategies for Managing LLM Token Growth and Performance in .NET"
 date: 2026-05-06 04:20:21 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/logicgriddev/a-semantic-kernel-alternative-for-net-when-and-why-youd-reach-for-one-40l"
+sources:
+  - "https://dev.to/logicgriddev/a-semantic-kernel-alternative-for-net-when-and-why-youd-reach-for-one-40l"
+tags: ["llm", "prompting", "rag"]
 ---
 
 Integrating Large Language Models into .NET applications opens up vast possibilities, yet it quickly surfaces a critical architectural concern: managing token consumption. We've all seen it – an application that works flawlessly in testing suddenly starts racking up unexpected API costs or exhibits painful latency in production. More often than not, the culprit isn't the LLM itself, but an unoptimized approach to prompt construction and context management, leading to token growth that's both insidious and expensive.

@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Modern C# Type System: Choosing the Right Type (Struct, Record, Class)"
 date: 2026-03-11 03:50:37 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/cristiansifuentes/struct-vs-record-vs-class-choosing-the-right-type-in-modern-c-net-910-edition-5ea2"
+sources:
+  - "https://dev.to/cristiansifuentes/struct-vs-record-vs-class-choosing-the-right-type-in-modern-c-net-910-edition-5ea2"
+tags: ["csharp", "performance"]
 ---
 
 The mental model we apply to data in our systems shapes everything, from performance profiles to debugging nightmares. For years, the `class` was the default, often the only real choice for complex data. Then `struct`s lingered in the shadows, mostly for primitive types or niche performance optimizations. Modern C# has dramatically expanded our toolkit, particularly with `record` types. The question is no longer "class or struct?", but rather, "which of these finely-tuned instruments is right for the job?"

@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Building Resilient API Clients in .NET: Advanced HttpClient Usage and Error Handling"
 date: 2025-12-24 03:35:07 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/79853483/sqlbulkcopy-is-failing-to-save-records-with-an-error-the-given-columnmapping-do"
+sources:
+  - "https://stackoverflow.com/questions/79853483/sqlbulkcopy-is-failing-to-save-records-with-an-error-the-given-columnmapping-do"
+tags: ["http", "resilience", "dotnet"]
 ---
 
 Network calls are a fact of life for most modern applications, especially within the increasingly distributed architectures we build today. Services communicate, data flows between boundaries, and inevitably, external systems will falter. Throttling, transient network glitches, unresponsive endpoints, or outright service outages are not "if" but "when." Relying on a naive `HttpClient` usage pattern in such an environment is akin to sailing without a life vest – you might be fine for a while, but eventually, you'll find yourself underwater.

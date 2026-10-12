@@ -5,6 +5,7 @@ date: 2025-11-05 19:08:17 +0000
 categories: dotnet blog
 sources:
   - "https://stackoverflow.com/questions/66585642/net-5-project-docker-copy-file-is-not-found"
+tags: ["dotnet", "devops", "cloud-native"]
 ---
 
 You've just finished a killer new feature in your latest .NET 8 (or maybe even .NET 9 preview!) project. It's fast, it's lean, and it's ready for the world. You hit `dotnet run`, and it sings. "Time to put this thing in a container!" you think, beaming.

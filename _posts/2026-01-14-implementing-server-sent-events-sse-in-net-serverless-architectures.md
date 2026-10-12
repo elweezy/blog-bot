@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Implementing Server-Sent Events (SSE) in .NET Serverless Architectures"
 date: 2026-01-14 03:38:42 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/79865251/aws-lambda-server-sent-events-on-net-with-aws-api-gateway"
+sources:
+  - "https://stackoverflow.com/questions/79865251/aws-lambda-server-sent-events-on-net-with-aws-api-gateway"
+tags: ["real-time", "aspnet-core", "cloud-native"]
 ---
 
 Implementing real-time communication patterns in serverless architectures often leads us down familiar paths, typically involving WebSockets. But what about scenarios where full-duplex communication feels like overkill? When the client primarily needs to *receive* a stream of updates, Server-Sent Events (SSE) offers a simpler, more HTTP-native alternative. The elegance of SSE, however, meets a pragmatic challenge when integrated into the popular .NET on AWS Lambda and API Gateway stack.

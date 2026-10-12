@@ -5,6 +5,7 @@ date: 2025-11-12 03:22:16 +0000
 categories: dotnet blog
 sources:
   - "https://dev.to/roxeem/incremental-source-generators-in-net-38gk"
+tags: ["csharp", "performance"]
 ---
 
 It used to be that extending a framework or automating boilerplate meant reaching for reflection, IL weaving, or — heaven forbid — T4 templates run as pre-build steps. Those approaches fail late: a `MissingMethodException` in production because runtime magic didn't line up with a release build, or a build server churning for minutes because of a custom code generator script. The developer experience was often… less than ideal.

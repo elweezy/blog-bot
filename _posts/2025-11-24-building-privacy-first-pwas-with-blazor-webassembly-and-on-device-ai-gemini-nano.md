@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Building Privacy-First PWAs with Blazor WebAssembly and On-Device AI (Gemini Nano)"
 date: 2025-11-24 03:29:55 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/whitewaw/building-a-privacy-first-financial-analysis-pwa-with-blazor-webassembly-on-device-ai-gemini-nano-94a"
+sources:
+  - "https://dev.to/whitewaw/building-a-privacy-first-financial-analysis-pwa-with-blazor-webassembly-on-device-ai-gemini-nano-94a"
+tags: ["blazor", "inference", "llm"]
 ---
 
 # Building Privacy-First PWAs with Blazor WebAssembly and On-Device AI (Gemini Nano)

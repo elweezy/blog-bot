@@ -5,6 +5,7 @@ date: 2025-11-14 03:23:20 +0000
 categories: dotnet blog
 sources:
   - "https://dev.to/gigaherz/building-a-secure-dal-composable-multi-tenancy-filtering-with-c-and-linq2db-19lo"
+tags: ["ef-core", "security", "architecture"]
 ---
 
 Multi-tenant data isolation needs to be baked into the data access layer, not bolted on haphazardly through manual query predicates. And for modern .NET applications leveraging Entity Framework Core, Global Query Filters have emerged as a powerful, elegant, and indeed, _secure_ way to achieve this.

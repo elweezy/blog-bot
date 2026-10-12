@@ -1,12 +1,14 @@
-﻿---
+---
 layout: post
 title: "Building High-Performance Distributed Caching Solutions in .NET"
 date: 2026-06-10 04:35:09 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/__2d3e61e/why-squirix-uses-a-strict-clientserver-architecture-for-a-net-distributed-cache-5086"
+sources:
+  - "https://dev.to/__2d3e61e/why-squirix-uses-a-strict-clientserver-architecture-for-a-net-distributed-cache-5086"
+tags: ["caching", "performance", "dotnet"]
 ---
 
-A few years back, we were battling a particularly stubborn performance bottleneck in a critical service. Our backend, a collection of ASP.NET Core microservices, was hitting a SQL Server instance with a high volume of read queries for relatively static configuration data and product catalogs. The database wasn't failing, but response times were creeping up, and scaling the database horizontally was becoming prohibitively expensive and complex. The obvious solution was caching. But "caching" in a distributed, high-traffic environment is rarely just a matter of slapping `MemoryCache.GetOrCreate` everywhere. It's an architectural decision with significant implications for performance, consistency, and resilience.
+Picture a typical bottleneck: a set of ASP.NET Core microservices hitting a SQL Server instance with a high volume of read queries for relatively static configuration data and product catalogs. The database isn't failing, but response times creep up, and scaling it horizontally is expensive and complex. The obvious answer is caching. But "caching" in a distributed, high-traffic environment is rarely just a matter of slapping `MemoryCache.GetOrCreate` everywhere. It's an architectural decision with significant implications for performance, consistency, and resilience.
 
 This isn't about *if* you should cache; it's about *how* to build high-performance distributed caching solutions in .NET that truly scale and perform under pressure. Modern cloud-native architectures, with their emphasis on microservices, stateless application instances, and horizontal scaling, necessitate a robust distributed caching layer. In-memory caching, while excellent for single-instance performance, becomes a liability when instances scale out or restart, leading to cache misses and a "thundering herd" problem on the backend data source.
 

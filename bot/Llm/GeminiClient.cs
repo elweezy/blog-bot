@@ -125,7 +125,7 @@ public sealed class GeminiClient : ILlmClient
             {
                 ["markdown"] = new { type = "STRING" },
                 ["description"] = new { type = "STRING" },
-                ["tags"] = new { type = "ARRAY", items = new { type = "STRING" } }
+                ["tags"] = new { type = "ARRAY", items = new { type = "STRING", @enum = TagVocabulary.All } }
             },
             required = new[] { "markdown", "description", "tags" }
         };

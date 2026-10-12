@@ -68,12 +68,7 @@ public sealed class FileBlogRepository
         // jekyll-feed (0.15 on GitHub Pages) builds the RSS <summary> from the excerpt, which Zapier posts to LinkedIn.
         sb.Append($"excerpt: {Yaml(post.Description.Trim())}\n");
 
-        var tags = post.Tags
-            .Select(t => t.Trim().ToLowerInvariant())
-            .Where(t => t.Length > 0)
-            .Distinct()
-            .Take(5)
-            .ToList();
+        var tags = TagVocabulary.Normalize(post.Tags);
         if (tags.Count > 0)
             sb.Append($"tags: [{string.Join(", ", tags.Select(Yaml))}]\n");
 

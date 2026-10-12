@@ -5,6 +5,7 @@ date: 2025-11-10 21:35:08 +0000
 categories: dotnet blog
 sources:
   - "https://dev.to/karnafun/building-a-secure-stripe-checkout-integration-with-aspnet-core-and-webhook-handling-ga3"
+tags: ["http", "resilience", "dotnet"]
 ---
 
 An external API that times out intermittently is one of the most common reasons a .NET service falls over. Before `IHttpClientFactory`, teams typically handled those outages by restarting services, checking logs for socket exhaustion, and waiting for stale DNS entries to expire. That approach is brittle, and it doesn't hold up for a system handling millions of requests a day.

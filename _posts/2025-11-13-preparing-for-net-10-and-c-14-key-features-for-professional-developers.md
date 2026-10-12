@@ -5,6 +5,7 @@ date: 2025-11-13 03:23:48 +0000
 categories: dotnet blog
 sources:
   - "https://dev.to/cristiansifuentes/new-features-in-net-10-c-14-the-experts-playbook-2025-2pe5"
+tags: ["dotnet", "csharp"]
 ---
 
 The pace of innovation in .NET and C# is relentless, and understanding the general trajectory of .NET 10 and C# 14 – even if it's based on informed speculation and current community signals – is crucial for making robust architectural decisions today. We're not just building features; we're building systems that need to scale, perform, and be maintainable for years. Anticipating where the platform is going helps us write future-proof code, avoid costly refactors, and ultimately, get more sleep.

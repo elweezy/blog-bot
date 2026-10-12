@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Effective Unit Testing of Entity Framework Core DbContext with Mocks"
 date: 2026-03-04 03:50:06 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/fazedordecodigo/como-criar-mocks-do-dbcontext-no-entity-framework-core-8-para-testes-unitarios-pc"
+sources:
+  - "https://dev.to/fazedordecodigo/como-criar-mocks-do-dbcontext-no-entity-framework-core-8-para-testes-unitarios-pc"
+tags: ["ef-core", "testing"]
 ---
 
 When building robust .NET applications with Entity Framework Core, ensuring the data access layer behaves as expected is paramount. We write tests. But then, the build server starts groaning, and local development cycles extend due to sluggish test suites. This usually points to one of the perennial challenges: unit testing components that interact directly with `DbContext`.

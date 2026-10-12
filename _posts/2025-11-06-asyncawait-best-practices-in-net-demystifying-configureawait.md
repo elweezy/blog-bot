@@ -5,6 +5,7 @@ date: 2025-11-06 00:05:11 +0000
 categories: dotnet blog
 sources:
   - "https://stackoverflow.com/questions/2743260/is-it-possible-to-write-to-the-console-in-colour-in-net"
+tags: ["csharp", "performance"]
 ---
 
 `async` and `await` made non-blocking code look almost like synchronous code: UIs stopped freezing, and I/O-bound work stopped tying up threads. The part that still trips people up is `ConfigureAwait(false)`: when you need it, when it does nothing, and when leaving it out causes a deadlock.

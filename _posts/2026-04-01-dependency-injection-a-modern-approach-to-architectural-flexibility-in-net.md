@@ -1,12 +1,14 @@
-﻿---
+---
 layout: post
 title: "Dependency Injection: A Modern Approach to Architectural Flexibility in .NET"
 date: 2026-04-01 04:07:25 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/jenll/how-to-export-excel-to-pdf-in-net-fast-accurate-method-3d8i"
+sources:
+  - "https://dev.to/jenll/how-to-export-excel-to-pdf-in-net-fast-accurate-method-3d8i"
+tags: ["architecture", "dotnet"]
 ---
 
-We've all been there: a codebase where a minor change cascades into a dozen unexpected breakages, or a critical bug proves impossible to reproduce outside of production because its dependencies are inextricably bound to the environment. Often, the root cause traces back to a system lacking architectural flexibility, where components are tightly coupled, making them brittle, hard to test, and even harder to evolve. For years, object-oriented design principles touted inheritance as the primary mechanism for reuse and extensibility. While useful in specific contexts, its overuse often leads to rigid hierarchies and the "fragile base class" problem, limiting our ability to adapt.
+It's a familiar failure mode: a codebase where a minor change cascades into a dozen unexpected breakages, or a critical bug proves impossible to reproduce outside of production because its dependencies are inextricably bound to the environment. Often, the root cause traces back to a system lacking architectural flexibility, where components are tightly coupled, making them brittle, hard to test, and even harder to evolve. For years, object-oriented design principles touted inheritance as the primary mechanism for reuse and extensibility. While useful in specific contexts, its overuse often leads to rigid hierarchies and the "fragile base class" problem, limiting our ability to adapt.
 
 Modern .NET development, particularly in the cloud-native era, demands agility. Systems need to be composed of interchangeable parts, easily testable in isolation, and adaptable to changing requirements or infrastructure. This is precisely where Dependency Injection (DI) transcends being merely a pattern and becomes a fundamental architectural pillar. It offers a powerful alternative to inheritance, promoting composition over inheritance and fundamentally reshaping how we design flexible, robust, and testable applications.
 

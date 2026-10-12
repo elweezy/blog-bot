@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Beyond the Basics: Advanced Entity Framework Core Strategies for Performance and Complex Queries"
 date: 2025-11-26 03:29:44 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/cristiansifuentes/entity-framework-core-for-net-developers-from-zero-to-first-query-1idd"
+sources:
+  - "https://dev.to/cristiansifuentes/entity-framework-core-for-net-developers-from-zero-to-first-query-1idd"
+tags: ["ef-core", "performance", "data"]
 ---
 
 When a system starts to scale, or when business requirements demand intricate data visualizations and rapid reporting, the basic `DbContext.Set<T>().Include(...).Where(...).ToList()` pattern, while wonderfully productive, often reveals its limitations. Suddenly, what was a trivial `GET` endpoint becomes a chronic performance bottleneck, or a seemingly simple data aggregation task starts consuming excessive memory and CPU cycles. This is precisely when we need to move beyond the foundational convenience of Entity Framework Core and leverage its more advanced capabilities.

@@ -124,14 +124,15 @@ public static class Prompts
         6. Don't add new sections or padding. Shorter and sharper beats longer.
         """,
         Honesty, Profile(authorProfile), Voice, Diagrams, DraftDesign, CodeAndFormat,
-        """
+        $"""
         ## Output
         Return JSON with:
         - "markdown": the full edited post.
         - "description": 2 or 3 sentences, at most 300 characters. It is the RSS summary that gets posted to LinkedIn
           with the link. State the post's sharpest claim or tension plainly. First-person opinion is fine; invented
           experience is not. No hashtags, no emoji, no engagement bait like "What do you think?" or "Thoughts?".
-        - "tags": 3 to 5 short lowercase tags, e.g. "rag", "agents", "evals", "inference", "fine-tuning".
+        - "tags": 2 to 4 tags from this fixed list, most specific first, so related posts can be matched:
+          {string.Join(", ", TagVocabulary.All)}.
         """);
 
     public static string EditorUser(Topic topic, string draft, string sourceMaterial, IReadOnlyList<string> issues)

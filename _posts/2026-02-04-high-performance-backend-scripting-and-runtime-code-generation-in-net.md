@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "High-Performance Backend Scripting and Runtime Code Generation in .NET"
 date: 2026-02-04 03:51:14 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/giannoudis/high-performance-backend-scripting-for-net-1jpg"
+sources:
+  - "https://dev.to/giannoudis/high-performance-backend-scripting-for-net-1jpg"
+tags: ["csharp", "performance"]
 ---
 
 Backend systems often face a fascinating tension: the need for robust, predictable performance coupled with an equally strong demand for adaptability and extensibility. We build our services in C#, leveraging its strong typing and ahead-of-time compilation for speed, but then our stakeholders or even our own product vision inevitably push for "just a little bit of dynamism." A configurable rule engine, a dynamic reporting query, user-defined logic for data transformation, or even simple custom plugin support—these requirements challenge the static nature of our compiled binaries.

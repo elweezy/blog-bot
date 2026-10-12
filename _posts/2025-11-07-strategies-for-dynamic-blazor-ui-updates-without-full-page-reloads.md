@@ -5,6 +5,7 @@ date: 2025-11-07 14:12:42 +0000
 categories: dotnet blog
 sources:
   - "https://stackoverflow.com/questions/79810777/can-i-soft-reload-a-blazor-page-component-without-a-full-browser-reload"
+tags: ["blazor", "aspnet-core"]
 ---
 
 Consider a Blazor Server dashboard that pulls data from several microservices, renders a set of charts, and has a complex filtering panel. When a user applies new filters, the whole dashboard should refresh with new data. The obvious approach is to re-fetch the data and call `StateHasChanged()`. In practice that often leaves the dashboard sluggish, and some child components keep showing stale state.

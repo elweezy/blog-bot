@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Implementing Resilient .NET Applications with Polly for Distributed System Reliability"
 date: 2026-02-11 04:00:38 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/79886180/when-using-lambda-expressions-with-bulk-update-apis-for-ef-core-is-the-lambda-e"
+sources:
+  - "https://stackoverflow.com/questions/79886180/when-using-lambda-expressions-with-bulk-update-apis-for-ef-core-is-the-lambda-e"
+tags: ["resilience", "dotnet"]
 ---
 
 The `HttpClient` call fails. Again. Not with a 500 internal server error, but a timeout. Then a `ConnectionRefused`. A few seconds later, it's a 408 Request Timeout. The external service is flaky, or perhaps just briefly overloaded. Left unchecked, this kind of intermittent unreliability rapidly cascades through a system, turning a minor hiccup in one service into a widespread outage across your application boundary. This is the reality of distributed systems: they *will* fail, and the network *will* be unreliable. The question isn't if, but when and how we mitigate it.

@@ -9,6 +9,10 @@ permalink: /tags/
   {% assign tags = site.tags | sort %}
   {% if tags.size == 0 %}
   <p>No tagged posts yet.</p>
+  {% else %}
+  <ul class="tag-cloud" aria-label="All tags">
+    {% for tag in tags %}<li><a href="#{{ tag[0] | slugify }}">{{ tag[0] }} <span>{{ tag[1].size }}</span></a></li>{% endfor %}
+  </ul>
   {% endif %}
   {% for tag in tags %}
   <h2 id="{{ tag[0] | slugify }}">{{ tag[0] }} <small>({{ tag[1].size }})</small></h2>

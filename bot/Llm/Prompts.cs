@@ -251,6 +251,16 @@ public static class Prompts
         sentences on what the post covers) and "sourceIndexes".
         """;
 
+    public const string TeaserSystem = """
+        You write the summary that is posted to LinkedIn with a link to a blog post about practical AI engineering.
+        Write 2 or 3 complete sentences, at most 300 characters in total. Use only facts stated in the sentences you
+        are given; you may add one short first-person opinion ("I think..."). State the sharpest finding plainly.
+        No hashtags, no emoji, no questions to the reader, no citation markers. Return only the summary text.
+        """;
+
+    public static string TeaserUser(IReadOnlyList<string> sentences) =>
+        "Verified sentences from the post:\n" + string.Join("\n", sentences.Select(s => "- " + s));
+
     public const string VerifierSystem = """
         You are a strict fact-checker for a technical blog. You receive items from a post, each with evidence:
         exact passages from the sources (with some surrounding context). Decide for each item whether the evidence
@@ -270,6 +280,12 @@ public static class Prompts
         - "diagram": a Mermaid diagram with its caption. Supported only if every node and edge is in the evidence,
           or the caption clearly presents it as the writer's own sketch or proposal.
         - "teaser": the post summary. Every factual statement in it must be supported.
+        - "uncited": a sentence written without its own evidence; the evidence given is everything the post cites.
+          Supported only if it is clearly framed as the writer's view ("I think", "I'd", "my guess"), a
+          recommendation, a question, or reasoning that adds no new facts. A factual statement about what people
+          or teams do, how a system works, what "usually" or "most" happens, or any amount (including words like
+          "half", "doubling", "most") that the evidence does not state is NOT supported. An opinion written as a
+          fact ("X is the easiest part of the job") is NOT supported.
 
         Return one verdict for every id, with a one-sentence reason. When in doubt, answer false.
         """;

@@ -20,8 +20,12 @@ public sealed class BlogWriterService
     private const int MinCitedClaims = 6;
     private const double MaxRejectedShare = 0.25;
 
+    // Uncited sentences are deleted when they state facts; if this share of all prose goes, the draft isn't trusted.
+    private const double MaxRemovedShare = 0.4;
+
     private const int TeaserId = -1;
     private const int DiagramIdBase = 10_000;
+    private const int UncitedIdBase = 20_000;
 
     /// <summary>One-line result of the fact-check for the PR description, e.g. "11/12 cited sentences verified ...".</summary>
     public string VerificationSummary { get; private set; } = string.Empty;
@@ -130,7 +134,8 @@ public sealed class BlogWriterService
         }
 
         post = verified;
-        post.Markdown = Citations.RenderFootnotes(post.Markdown, sources.Links);
+        // Citations were the fact-check's evidence; readers get prose attribution and the sources list instead.
+        post.Markdown = Citations.StripMarkers(post.Markdown);
 
         if (_dryRun)
         {
@@ -253,18 +258,26 @@ public sealed class BlogWriterService
     }
 
     /// <summary>
-    /// Sends every cited sentence, every diagram outside the Draft design, and the teaser to each verifier model.
+    /// Sends every sentence outside the Draft design (cited ones against their quotes, uncited ones to confirm they
+    /// are opinion or reasoning), every diagram outside the Draft design, and the teaser to each verifier model.
     /// Anything a verifier rejects is removed. Returns null when too much was rejected to trust the rest.
     /// </summary>
     private async Task<GeneratedPost?> VerifyAndPruneAsync(GeneratedPost post, SourceSet sources, CancellationToken ct)
     {
         var markdown = post.Markdown;
-        var claims = Citations.ExtractClaims(markdown);
-        var checks = claims.Select(c => new ClaimCheck(c.Id, "sentence", c.Text, Evidence(c.Quotes, sources))).ToList();
-
         var draftDesignAt = Regex.Match(markdown, @"^#{2,3}\s+.*draft design", RegexOptions.IgnoreCase | RegexOptions.Multiline);
+        var beforeDesign = draftDesignAt.Success ? markdown[..draftDesignAt.Index] : markdown; // the Draft design is the writer's own proposal
+
+        var claims = Citations.ExtractClaims(markdown);
+        var uncited = Citations.ExtractUncited(beforeDesign, UncitedIdBase);
+        var allQuotes = claims.SelectMany(c => c.Quotes).ToList();
+        var allEvidence = Evidence(allQuotes, sources);
+
+        var checks = claims.Select(c => new ClaimCheck(c.Id, "sentence", c.Text, Evidence(c.Quotes, sources))).ToList();
+        checks.AddRange(uncited.Select(c => new ClaimCheck(c.Id, "uncited", c.Text, allEvidence)));
+
         var diagrams = PostSanitizer.MermaidBlocks(markdown)
-            .Where(b => !draftDesignAt.Success || b.Index < draftDesignAt.Index) // the Draft design is the writer's own proposal
+            .Where(b => !draftDesignAt.Success || b.Index < draftDesignAt.Index)
             .ToList();
         for (var i = 0; i < diagrams.Count; i++)
         {
@@ -275,9 +288,57 @@ public sealed class BlogWriterService
                 Evidence(Citations.QuotesIn(caption).Concat(sectionQuotes).ToList(), sources)));
         }
 
-        var allQuotes = claims.SelectMany(c => c.Quotes).ToList();
-        checks.Add(new ClaimCheck(TeaserId, "teaser", post.Description, Evidence(allQuotes, sources)));
+        checks.Add(new ClaimCheck(TeaserId, "teaser", post.Description, allEvidence));
 
+        var rejected = await RejectedByAnyVerifierAsync(checks, ct);
+
+        var rejectedCited = claims.Where(c => rejected.ContainsKey(c.Id)).ToList();
+        var rejectedUncited = uncited.Where(c => rejected.ContainsKey(c.Id)).ToList();
+        var keptDiagrams = diagrams.Where((_, i) => !rejected.ContainsKey(DiagramIdBase + i)).Count();
+
+        foreach (var (id, reason) in rejected)
+        {
+            var what = id == TeaserId ? "teaser"
+                : id >= UncitedIdBase ? uncited.First(c => c.Id == id).Text
+                : id >= DiagramIdBase ? $"diagram {id - DiagramIdBase + 1}"
+                : claims[id].Text;
+            Console.WriteLine($"  rejected: {Truncate(what, 160)}\n    because {Truncate(reason, 200)}");
+        }
+
+        var totalProse = claims.Count + uncited.Count;
+        var removed = rejectedCited.Count + rejectedUncited.Count;
+        if (claims.Count < MinCitedClaims || rejectedCited.Count > claims.Count * MaxRejectedShare ||
+            removed > totalProse * MaxRemovedShare)
+        {
+            Console.WriteLine($"Fact-check: rejected {rejectedCited.Count}/{claims.Count} cited and " +
+                              $"{rejectedUncited.Count}/{uncited.Count} uncited sentences; too much to publish.");
+            return null;
+        }
+
+        // Remove rejected diagrams back to front so earlier positions stay valid, then rejected sentences.
+        for (var i = diagrams.Count - 1; i >= 0; i--)
+            if (rejected.ContainsKey(DiagramIdBase + i))
+                markdown = RemoveDiagram(markdown, diagrams[i]);
+        markdown = Citations.RemoveClaims(markdown, rejectedCited.Concat(rejectedUncited).ToList());
+
+        var description = post.Description;
+        var teaserNote = "verified";
+        if (rejected.ContainsKey(TeaserId))
+        {
+            (description, teaserNote) = await ReplaceTeaserAsync(markdown, allEvidence, ct);
+        }
+
+        VerificationSummary =
+            $"{claims.Count - rejectedCited.Count}/{claims.Count} cited and {uncited.Count - rejectedUncited.Count}/{uncited.Count} " +
+            $"uncited sentences kept after checks by {string.Join(" and ", _verifierModels)}, " +
+            $"{keptDiagrams}/{diagrams.Count} diagrams kept, teaser {teaserNote}";
+        Console.WriteLine($"Fact-check: {VerificationSummary}.");
+
+        return new GeneratedPost { Markdown = markdown, Description = description, Tags = post.Tags };
+    }
+
+    private async Task<Dictionary<int, string>> RejectedByAnyVerifierAsync(List<ClaimCheck> checks, CancellationToken ct)
+    {
         var rejected = new Dictionary<int, string>();
         foreach (var model in _verifierModels)
         {
@@ -286,29 +347,47 @@ public sealed class BlogWriterService
                 rejected.TryAdd(verdict.Id, $"{model}: {verdict.Reason}");
         }
 
-        var rejectedClaims = claims.Where(c => rejected.ContainsKey(c.Id)).ToList();
-        VerificationSummary =
-            $"{claims.Count - rejectedClaims.Count}/{claims.Count} cited sentences verified by {string.Join(" and ", _verifierModels)}, " +
-            $"{diagrams.Count(d => !rejected.ContainsKey(DiagramIdBase + diagrams.IndexOf(d)))}/{diagrams.Count} diagrams kept, " +
-            $"teaser {(rejected.ContainsKey(TeaserId) ? "rebuilt from verified sentences" : "verified")}";
-        Console.WriteLine($"Fact-check: {VerificationSummary}.");
-        foreach (var (id, reason) in rejected)
+        return rejected;
+    }
+
+    /// <summary>
+    /// The teaser goes to LinkedIn as-is, so a rejected one is rewritten from verified sentences and checked again.
+    /// If that fails too, it falls back to whole verified sentences, never a cut-off one.
+    /// </summary>
+    private async Task<(string Teaser, string Note)> ReplaceTeaserAsync(string markdown, List<string> evidence, CancellationToken ct)
+    {
+        // Prose sentences and list items only: captions and table rows don't read as a summary.
+        var verified = Citations.ExtractClaims(markdown)
+            .Select(c => c.Text)
+            .Where(t => !t.StartsWith('*') && !t.StartsWith('|'))
+            .Select(t => t.TrimStart('-', ' '))
+            .ToList();
+
+        var rewritten = await _llm.RewriteTeaserAsync(verified, ct);
+        if (rewritten.Length is > 0 and <= 320)
         {
-            var what = id == TeaserId ? "teaser" : id >= DiagramIdBase ? $"diagram {id - DiagramIdBase + 1}" : claims[id].Text;
-            Console.WriteLine($"  rejected: {Truncate(what, 160)}\n    because {Truncate(reason, 200)}");
+            var recheck = await RejectedByAnyVerifierAsync([new ClaimCheck(TeaserId, "teaser", rewritten, evidence)], ct);
+            if (recheck.Count == 0)
+                return (rewritten, "rewritten from verified sentences and re-checked");
+
+            Console.WriteLine($"  rewritten teaser rejected too: {Truncate(recheck[TeaserId], 200)}");
         }
 
-        if (claims.Count < MinCitedClaims || rejectedClaims.Count > claims.Count * MaxRejectedShare)
-            return null;
+        return (FallbackTeaser(verified), "built from whole verified sentences");
+    }
 
-        // Remove rejected diagrams back to front so earlier positions stay valid, then rejected sentences.
-        for (var i = diagrams.Count - 1; i >= 0; i--)
-            if (rejected.ContainsKey(DiagramIdBase + i))
-                markdown = RemoveDiagram(markdown, diagrams[i]);
-        markdown = Citations.RemoveClaims(markdown, rejectedClaims);
+    // Whole sentences only, as many as fit in 300 characters (at least one).
+    private static string FallbackTeaser(IReadOnlyList<string> verifiedSentences)
+    {
+        var teaser = new StringBuilder();
+        foreach (var sentence in verifiedSentences)
+        {
+            if (teaser.Length > 0 && teaser.Length + 1 + sentence.Length > 300) break;
+            if (teaser.Length > 0) teaser.Append(' ');
+            teaser.Append(sentence);
+        }
 
-        var description = rejected.ContainsKey(TeaserId) ? FallbackTeaser(markdown) : post.Description;
-        return new GeneratedPost { Markdown = markdown, Description = description, Tags = post.Tags };
+        return teaser.ToString();
     }
 
     /// <summary>
@@ -330,14 +409,6 @@ public sealed class BlogWriterService
         }
 
         return evidence;
-    }
-
-    // A teaser built only from sentences that passed the fact-check.
-    private static string FallbackTeaser(string markdown)
-    {
-        var sentences = Citations.ExtractClaims(markdown).Select(c => c.Text.TrimStart('-', '*', ' ')).Take(2);
-        var teaser = string.Join(" ", sentences);
-        return teaser.Length <= 300 ? teaser : teaser[..teaser.LastIndexOf(' ', 297)] + "...";
     }
 
     private static string CaptionAfter(string markdown, Match block)

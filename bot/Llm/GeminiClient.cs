@@ -76,6 +76,7 @@ public sealed class GeminiClient : ILlmClient
         };
 
         var proposals = await CallAsync(
+            "topics",
             Prompts.TopicsSystem,
             Prompts.TopicsUser(JsonSerializer.Serialize(compact), excludedTitles),
             schema,
@@ -108,7 +109,7 @@ public sealed class GeminiClient : ILlmClient
     }
 
     public Task<string> WriteDraftAsync(Topic topic, string sourceMaterial, string? authorProfile, CancellationToken ct = default) =>
-        CallAsync(Prompts.WriterSystem(authorProfile), Prompts.WriterUser(topic, sourceMaterial), schema: null, text => text, ct);
+        CallAsync("draft", Prompts.WriterSystem(authorProfile), Prompts.WriterUser(topic, sourceMaterial), schema: null, text => text, ct);
 
     public async Task<GeneratedPost> EditPostAsync(
         Topic topic,
@@ -131,6 +132,7 @@ public sealed class GeminiClient : ILlmClient
         };
 
         return await CallAsync(
+            "edit",
             Prompts.EditorSystem(authorProfile),
             Prompts.EditorUser(topic, draft, sourceMaterial, issues),
             schema,
@@ -165,7 +167,7 @@ public sealed class GeminiClient : ILlmClient
         var payload = JsonSerializer.Serialize(claims.Select(c => new { id = c.Id, kind = c.Kind, text = c.Text, evidence = c.Evidence }));
 
         // Only this one model: two different models each give an independent verdict.
-        return CallAsync(Prompts.VerifierSystem, Prompts.VerifierUser(payload), schema, json =>
+        return CallAsync($"fact-check", Prompts.VerifierSystem, Prompts.VerifierUser(payload), schema, json =>
         {
             var verdicts = JsonSerializer.Deserialize<List<ClaimVerdict>>(json, JsonOptions) ?? [];
             var missing = claims.Select(c => c.Id).Except(verdicts.Select(v => v.Id)).ToList();
@@ -175,9 +177,15 @@ public sealed class GeminiClient : ILlmClient
         }, ct, [model]);
     }
 
+    public async Task<string> RewriteTeaserAsync(IReadOnlyList<string> verifiedSentences, CancellationToken ct = default)
+    {
+        var teaser = await CallAsync("teaser", Prompts.TeaserSystem, Prompts.TeaserUser(verifiedSentences), schema: null, text => text, ct);
+        return teaser.Trim().Trim('"').Trim();
+    }
+
     public async Task<string> FixDiagramAsync(string diagram, string error, CancellationToken ct = default)
     {
-        var fixedDiagram = await CallAsync(Prompts.FixDiagramSystem, Prompts.FixDiagramUser(diagram, error), schema: null, text => text, ct);
+        var fixedDiagram = await CallAsync("diagram fix", Prompts.FixDiagramSystem, Prompts.FixDiagramUser(diagram, error), schema: null, text => text, ct);
         return fixedDiagram.Trim().Replace("```mermaid", "").Replace("```", "").Trim();
     }
 
@@ -186,7 +194,7 @@ public sealed class GeminiClient : ILlmClient
     /// truncated output, JSON that doesn't parse) counts as a failed attempt, so it is retried and then falls through
     /// to the next model.
     /// </summary>
-    private async Task<T> CallAsync<T>(string system, string user, object? schema, Func<string, T> parse, CancellationToken ct,
+    private async Task<T> CallAsync<T>(string step, string system, string user, object? schema, Func<string, T> parse, CancellationToken ct,
         IReadOnlyList<string>? models = null)
     {
         var body = new
@@ -207,12 +215,12 @@ public sealed class GeminiClient : ILlmClient
                 var (result, failure, tryNextModel) = await TryCallAsync(model, payload, parse, ct);
                 if (failure is null)
                 {
-                    Console.WriteLine($"Gemini call succeeded with {model}.");
+                    Console.WriteLine($"Gemini [{step}] succeeded with {model}.");
                     return result!;
                 }
 
                 failures.Add($"{model} (attempt {attempt}): {failure}");
-                Console.Error.WriteLine($"Gemini {model} attempt {attempt} failed: {failure}");
+                Console.Error.WriteLine($"Gemini [{step}] {model} attempt {attempt} failed: {failure}");
 
                 if (tryNextModel) break;
                 if (attempt < MaxAttemptsPerModel)

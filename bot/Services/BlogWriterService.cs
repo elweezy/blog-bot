@@ -11,6 +11,9 @@ public sealed class BlogWriterService
     private const int MaxExcludedTitlesInPrompt = 80;
     private const int MaxEditAttempts = 3;
 
+    // Below this much fetched text the writer would be working from the title alone, so the topic is skipped.
+    private const int MinSourceChars = 1500;
+
     private readonly TopicDiscoveryService _discovery;
     private readonly ILlmClient _llm;
     private readonly FileBlogRepository _blogRepo;
@@ -49,17 +52,38 @@ public sealed class BlogWriterService
             return null;
         }
 
-        var chosen = await ChooseTopicAsync(candidates, index, ct);
-        if (chosen is null)
+        var ranked = await RankTopicsAsync(candidates, index, ct);
+        if (ranked.Count == 0)
         {
             Console.WriteLine("Every proposed topic duplicates an existing post. Skipping this run instead of repeating.");
             return null;
         }
 
+        // Take the best topic whose sources actually have enough text to write from.
+        Topic? chosen = null;
+        var sourceMaterial = string.Empty;
+        foreach (var topic in ranked)
+        {
+            sourceMaterial = await BuildSourceMaterialAsync(topic, ct);
+            var textLength = sourceMaterial.Length - topic.Sources.Take(3).Sum(s => s.Title.Length + s.Source.Length + 10);
+            if (textLength >= MinSourceChars)
+            {
+                chosen = topic;
+                break;
+            }
+
+            Console.WriteLine($"  skipped: {topic.Title} (only {textLength} characters of source text)");
+        }
+
+        if (chosen is null)
+        {
+            Console.WriteLine("No new topic has enough source material. Skipping this run.");
+            return null;
+        }
+
         Console.WriteLine($"Chosen topic: {chosen.Title}");
         Console.WriteLine($"Angle:        {chosen.Angle}");
-
-        var sourceMaterial = await BuildSourceMaterialAsync(chosen, ct);
+        Console.WriteLine($"Source text:  {sourceMaterial.Length} characters");
         var authorProfile = _blogRepo.LoadAuthorProfile();
         var sanitizer = new PostSanitizer(ExtractSection(authorProfile, "Real experiences"));
 
@@ -86,7 +110,8 @@ public sealed class BlogWriterService
         return (chosen, post, postPath);
     }
 
-    private async Task<Topic?> ChooseTopicAsync(List<TopicCandidate> candidates, PostIndex index, CancellationToken ct)
+    /// <returns>New (non-duplicate) topics, best first; empty when every proposal duplicates an existing post.</returns>
+    private async Task<List<Topic>> RankTopicsAsync(List<TopicCandidate> candidates, PostIndex index, CancellationToken ct)
     {
         var existingTitles = index.Titles.ToList();
         var usedUrls = index.SourceUrls;
@@ -118,10 +143,10 @@ public sealed class BlogWriterService
             foreach (var topic in fresh)
                 topic.AggregateScore = topic.Sources.Count == 0 ? 0 : topic.Sources.Sum(TopicDiscoveryService.Score);
 
-            return fresh.OrderByDescending(t => t.AggregateScore).First();
+            return fresh.OrderByDescending(t => t.AggregateScore).ToList();
         }
 
-        return null;
+        return [];
     }
 
     private static string? DuplicateReason(Topic topic, List<string> existingTitles, HashSet<string> usedUrls)

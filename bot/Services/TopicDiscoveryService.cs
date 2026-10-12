@@ -75,11 +75,13 @@ public sealed partial class TopicDiscoveryService
                 "devto" when candidate.SourceId is not null => await FetchDevToBodyAsync(candidate.SourceId, ct),
                 "hackernews" when candidate.SourceId is not null => await FetchHackerNewsThreadAsync(candidate, maxChars, ct),
                 "huggingface" => candidate.Summary,
+                "reddit" => await FetchRedditThreadAsync(candidate.Url, maxChars, ct),
                 _ => await FetchPageTextAsync(candidate.Url, ct)
             };
 
-            if (string.IsNullOrWhiteSpace(text))
-                text = candidate.Summary;
+            // Script-rendered pages strip down to almost nothing; keep the feed summary rather than lose it.
+            if (text.Trim().Length < 300)
+                text = (candidate.Summary + "\n" + text).Trim();
 
             return Truncate(text, maxChars);
         }
@@ -289,6 +291,64 @@ public sealed partial class TopicDiscoveryService
             Console.Error.WriteLine($"Error fetching Reddit r/{subreddit}: {ex.Message}");
             return [];
         }
+    }
+
+    /// <summary>
+    /// Reddit pages are rendered by JavaScript, so the HTML has no text. The thread's RSS feed has the full post
+    /// followed by its comments.
+    /// </summary>
+    private async Task<string> FetchRedditThreadAsync(string url, int maxChars, CancellationToken ct)
+    {
+        var xml = await GetWithRateLimitRetryAsync(url.TrimEnd('/') + "/.rss", ct);
+        if (xml is null) return string.Empty;
+
+        var doc = XDocument.Parse(xml);
+        XNamespace atom = "http://www.w3.org/2005/Atom";
+        var texts = doc.Descendants(atom + "entry")
+            .Select(e => StripRedditFooter(StripHtml(e.Element(atom + "content")?.Value ?? string.Empty)))
+            .Where(t => t.Length > 0)
+            .ToList();
+        if (texts.Count == 0) return string.Empty;
+
+        var sb = new StringBuilder();
+        sb.AppendLine(Truncate(texts[0], maxChars * 2 / 3)).AppendLine();
+
+        var comments = texts.Skip(1)
+            .Where(t => t.Length > 80 && !t.Contains("I am a bot", StringComparison.OrdinalIgnoreCase))
+            .Take(8).Select(t => "- Reddit commenter: " + Truncate(t, 500));
+        sb.AppendLine("Discussion highlights:").AppendLine(string.Join("\n", comments));
+        return sb.ToString();
+    }
+
+    // Reddit rate-limits feed requests aggressively; wait as long as it asks (capped) and try again.
+    private async Task<string?> GetWithRateLimitRetryAsync(string url, CancellationToken ct)
+    {
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            using var response = await _httpClient.GetAsync(url, ct);
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadAsStringAsync(ct);
+
+            if (response.StatusCode != HttpStatusCode.TooManyRequests || attempt == 3)
+            {
+                Console.Error.WriteLine($"Reddit thread {url} returned {(int)response.StatusCode}.");
+                return null;
+            }
+
+            var wait = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(10 * attempt);
+            if (wait > TimeSpan.FromSeconds(30)) wait = TimeSpan.FromSeconds(30);
+            Console.Error.WriteLine($"Reddit rate limit; retrying in {wait.TotalSeconds:0}s.");
+            await Task.Delay(wait, ct);
+        }
+
+        return null;
+    }
+
+    // Every RSS entry ends with "submitted by /u/... [link] [comments]".
+    private static string StripRedditFooter(string text)
+    {
+        var i = text.LastIndexOf("submitted by", StringComparison.Ordinal);
+        return (i > 0 ? text[..i] : text).Trim();
     }
 
     #endregion

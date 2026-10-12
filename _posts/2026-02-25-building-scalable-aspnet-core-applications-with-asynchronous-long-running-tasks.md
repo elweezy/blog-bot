@@ -1,12 +1,14 @@
-﻿---
+---
 layout: post
 title: "Building Scalable ASP.NET Core Applications with Asynchronous Long-Running Tasks"
 date: 2026-02-25 03:52:42 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/boldsign/mastering-long-running-tasks-in-aspnet-core-without-blocking-requests-3g79"
+sources:
+  - "https://dev.to/boldsign/mastering-long-running-tasks-in-aspnet-core-without-blocking-requests-3g79"
+tags: ["aspnet-core", "architecture", "performance"]
 ---
 
-An API endpoint that seemingly takes milliseconds to respond often hides a more insidious problem: a background process that's quietly choking the server, consuming critical resources, or simply failing to complete reliably. I've debugged countless production issues where a "fast" API call initiated a long-running task synchronously, leading to thread pool starvation, increased latency under load, and ultimately, system instability. The illusion of speed quickly shatters when real-world traffic hits.
+An API endpoint that seemingly takes milliseconds to respond often hides a more insidious problem: a background process that's quietly choking the server, consuming critical resources, or simply failing to complete reliably. A common production failure starts with a "fast" API call that runs a long-running task synchronously, leading to thread pool starvation, increased latency under load, and ultimately, system instability. The illusion of speed quickly shatters when real-world traffic hits.
 
 This isn't just about avoiding a synchronous `Thread.Sleep` in your controllers. It's about fundamentally rethinking how ASP.NET Core applications manage work that extends beyond the immediate scope of an HTTP request. Modern cloud-native practices, microservice architectures, and the relentless demand for high responsiveness make decoupling long-running operations from the request-response cycle not just a best practice, but a necessity for building truly scalable and resilient systems.
 

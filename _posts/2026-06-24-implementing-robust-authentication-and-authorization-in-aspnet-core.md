@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Implementing Robust Authentication and Authorization in ASP.NET Core"
 date: 2026-06-24 04:30:15 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/chaotic_neutral_dev/compile-time-feature-flags-in-c-using-il-weaving-and-a-roslyn-analyzer-1i55"
+sources:
+  - "https://dev.to/chaotic_neutral_dev/compile-time-feature-flags-in-c-using-il-weaving-and-a-roslyn-analyzer-1i55"
+tags: ["aspnet-core", "security"]
 ---
 
 When architecting distributed systems, the perennial challenge of establishing a reliable security perimeter invariably resurfaces. A monolithic application might get by with an integrated user store and simple role checks, but the moment you fragment your services, introduce client applications, or integrate with third-party systems, the security landscape shifts dramatically. Suddenly, the question isn't just "who is this user?", but "who asserted this user's identity?", "what privileges were granted to this user by an external system?", and "how do we centrally manage and enforce these permissions across a sprawling service mesh?". Relying on simple token validation and hardcoded roles quickly becomes a maintenance nightmare, a performance bottleneck, and a significant security risk.

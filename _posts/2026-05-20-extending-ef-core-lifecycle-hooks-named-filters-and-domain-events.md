@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Extending EF Core: Lifecycle Hooks, Named Filters, and Domain Events"
 date: 2026-05-20 04:31:20 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/karenpayneoregon/ef-core-named-query-filters-54ej"
+sources:
+  - "https://dev.to/karenpayneoregon/ef-core-named-query-filters-54ej"
+tags: ["ef-core", "architecture"]
 ---
 
 Navigating the complexities of data persistence in modern applications demands more than just basic CRUD operations. While Entity Framework Core provides an excellent abstraction over the database, building robust, maintainable, and scalable systems often requires extending its core capabilities. Specifically, integrating lifecycle hooks, leveraging named query filters, and adopting domain event patterns can transform a simple data layer into a sophisticated, business-rule-aware persistence mechanism.

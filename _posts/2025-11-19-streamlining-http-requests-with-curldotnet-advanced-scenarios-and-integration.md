@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Streamlining HTTP Requests with CurlDotNet: Advanced Scenarios and Integration"
 date: 2025-11-19 03:21:53 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/actor-dev/brighter-v10-postgres-inbox-pattern-3b0l"
+sources:
+  - "https://dev.to/actor-dev/brighter-v10-postgres-inbox-pattern-3b0l"
+tags: ["http", "dotnet"]
 ---
 
 Interacting with external HTTP services is a foundational task in almost any modern application. For the vast majority of scenarios, .NET's `HttpClient` provides a robust, performant, and flexible API that seamlessly integrates with async/await patterns and dependency injection. It's the go-to tool for building REST clients, consuming web APIs, and handling most web traffic.

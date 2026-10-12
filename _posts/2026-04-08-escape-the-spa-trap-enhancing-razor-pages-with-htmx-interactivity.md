@@ -1,12 +1,14 @@
-﻿---
+---
 layout: post
 title: "Escape the SPA Trap: Enhancing Razor Pages with HTMX Interactivity"
 date: 2026-04-08 04:02:10 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/vikrant_bagal_afae3e25ca7/escape-the-spa-trap-adding-interactivity-to-aspnet-razor-pages-with-htmx-48aj"
+sources:
+  - "https://dev.to/vikrant_bagal_afae3e25ca7/escape-the-spa-trap-adding-interactivity-to-aspnet-razor-pages-with-htmx-48aj"
+tags: ["aspnet-core"]
 ---
 
-The pursuit of client-side interactivity in web applications often leads down a familiar path: the Single Page Application (SPA). We’ve all been there, reaching for React, Angular, or Vue.js, even for moderately interactive experiences that feel a little too dynamic for traditional server-side rendering. This architectural decision, while powerful, brings its own set of baggage: a separate frontend build process, complex state management, a distinct API layer, and often, a hefty JavaScript bundle to ship to the client. For many line-of-business applications, internal tools, or even public-facing sites with significant but not extreme interactivity requirements, this "SPA trap" can feel like over-engineering, costing developer time and increasing complexity without a commensurate gain in user experience.
+The pursuit of client-side interactivity in web applications often leads down a familiar path: the Single Page Application (SPA). Teams often reach for React, Angular, or Vue.js, even for moderately interactive experiences that feel a little too dynamic for traditional server-side rendering. This architectural decision, while powerful, brings its own set of baggage: a separate frontend build process, complex state management, a distinct API layer, and often, a hefty JavaScript bundle to ship to the client. For many line-of-business applications, internal tools, or even public-facing sites with significant but not extreme interactivity requirements, this "SPA trap" can feel like over-engineering, costing developer time and increasing complexity without a commensurate gain in user experience.
 
 The modern web development landscape, however, is witnessing a quiet resurgence of "HTML over the wire" patterns. With HTTP/2, faster network connections, and increasingly capable browsers, the notion of the server orchestrating the UI is making a pragmatic comeback. This isn't about abandoning JavaScript entirely; it's about re-evaluating where the logic lives and leveraging the strengths of our existing server-side frameworks. For ASP.NET developers deeply familiar with Razor Pages, this is an opportune moment to explore how we can imbue our applications with rich interactivity without adopting the full SPA paradigm. HTMX, a lightweight JavaScript library that extends HTML with AJAX capabilities, offers precisely this alternative.
 

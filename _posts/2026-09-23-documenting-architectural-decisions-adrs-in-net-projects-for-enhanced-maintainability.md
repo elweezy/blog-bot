@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Documenting Architectural Decisions (ADRs) in .NET Projects for Enhanced Maintainability"
 date: 2026-09-23 08:22:27 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/1109558/allocating-more-than-1-000-mb-of-memory-in-32-bit-net-process"
+sources:
+  - "https://stackoverflow.com/questions/1109558/allocating-more-than-1-000-mb-of-memory-in-32-bit-net-process"
+tags: ["architecture"]
 ---
 
 The call came late on a Friday afternoon. A production issue. A critical backend service, designed years ago, was intermittently failing under what seemed like moderate load. The stack traces were perplexing, pointing to a data access pattern that, on the surface, felt wildly inefficient for a high-throughput system. Diving into the codebase, the team and I were met with a wall of uncommented, highly optimized (or so it seemed) SQL queries executed in a bizarre sequence. There were hints of an optimistic concurrency strategy, but without any explicit documentation explaining *why* this complex dance of reads, updates, and retries was chosen over a more straightforward, transactional approach, debugging was a nightmare. The original architect? Long gone. The project wiki? Last updated before the current framework version existed. This wasn't just a bug; it was an archeological expedition into forgotten intent.

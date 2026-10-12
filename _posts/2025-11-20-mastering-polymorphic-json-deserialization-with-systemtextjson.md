@@ -1,14 +1,16 @@
-﻿---
+---
 layout: post
 title: "Mastering Polymorphic JSON Deserialization with System.Text.Json"
 date: 2025-11-20 03:20:55 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/79823170/system-text-json-polymorphic-deserialization-not-binding-type-discriminator-prop"
+sources:
+  - "https://stackoverflow.com/questions/79823170/system-text-json-polymorphic-deserialization-not-binding-type-discriminator-prop"
+tags: ["csharp", "data"]
 ---
 
 When designing event-driven systems, command buses, or webhook receivers, we often find ourselves wrestling with a common challenge: flexible data contracts. The payload arriving over the wire might represent various distinct types, all sharing a common base, and our application needs to deserialize it into the *correct* concrete type. This is the essence of polymorphic deserialization, and while `System.Text.Json` has evolved, mastering its capabilities for these scenarios is critical for building robust and evolvable APIs.
 
-I've seen countless systems stumble here, either by resorting to brittle manual parsing, complex if-else cascades, or, worse, inefficient serializations that bloat payloads. The modern .NET ecosystem, particularly with `System.Text.Json` as the default serializer, demands a more elegant and performant solution. With the prevalence of microservices, cloud-native deployments, and event sourcing, the ability to gracefully handle polymorphic data isn't just a nice-to-have; it's a foundational requirement for systems that need to adapt and scale without constant re-deploys.
+This is where many systems stumble, either by resorting to brittle manual parsing, complex if-else cascades, or, worse, inefficient serializations that bloat payloads. The modern .NET ecosystem, particularly with `System.Text.Json` as the default serializer, demands a more elegant and performant solution. With the prevalence of microservices, cloud-native deployments, and event sourcing, the ability to gracefully handle polymorphic data isn't just a nice-to-have; it's a foundational requirement for systems that need to adapt and scale without constant re-deploys.
 
 ### The Problem: When a `BaseType` Isn't Enough
 

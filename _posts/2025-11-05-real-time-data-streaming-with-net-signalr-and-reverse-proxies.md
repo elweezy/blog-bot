@@ -5,6 +5,7 @@ date: 2025-11-05 17:30:26 +0000
 categories: dotnet blog
 sources:
   - "https://dev.to/morteza-jangjoo/real-time-streaming-in-net-signalr-live-data-like-trading-apps-45h4"
+tags: ["aspnet-core", "real-time", "dotnet"]
 ---
 
 When you're building modern web applications, the demand for immediate, live feedback isn't just a nice-to-have anymore; it's practically a requirement. Think about it: a trading dashboard showing real-time price fluctuations, a live sports score tracker, a collaborative document editor, or even just a busy chat application. Users expect instant updates, and anything less feels… sluggish, even broken.

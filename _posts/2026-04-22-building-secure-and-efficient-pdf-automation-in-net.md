@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Building Secure and Efficient PDF Automation in .NET"
 date: 2026-04-22 04:05:53 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/kielltampubolon/building-secure-pdf-automation-in-net-the-trade-offs-nobody-talks-about-f3c"
+sources:
+  - "https://dev.to/kielltampubolon/building-secure-pdf-automation-in-net-the-trade-offs-nobody-talks-about-f3c"
+tags: ["security", "dotnet"]
 ---
 
 Shipping a complex reporting feature for a new SaaS platform, the requirement was clear: generate pixel-perfect PDFs from dynamically rendered HTML. Simple enough, right? Just grab an HTML-to-PDF library, feed it the markup, and done. That's the common assumption, and it's precisely where many teams unknowingly build a ticking time bomb of security vulnerabilities, performance bottlenecks, and operational nightmares.

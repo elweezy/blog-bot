@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Advanced EF Core Query Optimization: Implementing Smart Field Selection"
 date: 2025-12-17 03:33:27 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/mohammad_aliebrahimzadeh/introducing-keplercore-smart-field-selection-for-ef-core-apis-4da2"
+sources:
+  - "https://dev.to/mohammad_aliebrahimzadeh/introducing-keplercore-smart-field-selection-for-ef-core-apis-4da2"
+tags: ["ef-core", "performance"]
 ---
 
 A common scenario: you're profiling a new API endpoint, perhaps one designed to return a list of `Product` objects for a dashboard widget. The database query itself, when isolated, seems performant enough. Yet, the overall API response time is sluggish, and network transfer metrics are unexpectedly high. Digging deeper reveals the culprit: you're shipping `Product` entities that contain `DescriptionHtml`, `InternalNotes`, `SupplierContractDetails`, and a dozen other heavyweight fields that the client consuming this particular endpoint simply doesn't need for its summary view. The `SELECT *` mentality, even if implicit through `ToListAsync()` on an `IQueryable<TEntity>`, is a silent performance killer that scales poorly with data volume and user load.

@@ -1,12 +1,14 @@
-﻿---
+---
 layout: post
 title: "Leveraging F# for Domain-Specific Languages (DSLs) in .NET Solutions"
 date: 2026-01-21 03:37:40 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/saber-amani/relational-vs-nosql-in-real-projects-how-i-choose-the-right-database-for-net-and-cloud-systems-31aa"
+sources:
+  - "https://dev.to/saber-amani/relational-vs-nosql-in-real-projects-how-i-choose-the-right-database-for-net-and-cloud-systems-31aa"
+tags: ["architecture", "dotnet"]
 ---
 
-The ever-evolving landscape of business logic often presents a unique challenge: expressing complex, dynamic rules in a way that is both precise for the machine and intelligible to the human domain expert. I've spent years wrangling with this, watching C# codebases morph into sprawling conditional labyrinths, each new business requirement adding another layer of `if`/`else` or `switch` statements, gradually eroding readability and maintainability.
+The ever-evolving landscape of business logic often presents a unique challenge: expressing complex, dynamic rules in a way that is both precise for the machine and intelligible to the human domain expert. Left unchecked, C# codebases tend to morph into sprawling conditional labyrinths, each new business requirement adding another layer of `if`/`else` or `switch` statements, gradually eroding readability and maintainability.
 
 Consider a system calculating dynamic shipping rates based on customer tiers, product dimensions, destination zones, promotional codes, and current fuel surcharges. Or an insurance policy engine determining premiums with dozens of clauses, riders, and actuarial rules. Directly embedding such logic into imperative C# often leads to methods hundreds of lines long, tightly coupled to concrete data structures, and resistant to change. The domain expert, who truly understands the nuances of "Zone 3 heavy cargo priority dispatch" or "pre-existing condition exclusion clause," simply cannot read or validate the C# code. This impedance mismatch is a significant source of bugs, misinterpretations, and slow delivery cycles.
 

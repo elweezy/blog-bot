@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Integrating Contextual AI and LLMs in .NET Applications"
 date: 2025-12-10 03:34:38 +0000
 categories: dotnet blog
-canonical_url: "https://stackoverflow.com/questions/77322704/load-clientid-and-clientsecret-from-the-database-in-net"
+sources:
+  - "https://stackoverflow.com/questions/77322704/load-clientid-and-clientsecret-from-the-database-in-net"
+tags: ["llm", "prompting", "dotnet"]
 ---
 
 We've spent decades perfecting deterministic logic within our applications: strict business rules, precise data transformations, and predictable workflows. Yet, a growing class of problems resists this approach. Think about the common challenge of making sense of unstructured customer feedback, generating contextually relevant responses in a support chatbot, or automatically summarizing complex documents. These aren't just data processing tasks; they demand *understanding* and inference, capabilities that traditional algorithmic logic struggles to provide.

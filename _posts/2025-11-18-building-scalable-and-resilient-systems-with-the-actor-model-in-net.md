@@ -1,9 +1,11 @@
-﻿---
+---
 layout: post
 title: "Building Scalable and Resilient Systems with the Actor Model in .NET"
 date: 2025-11-18 14:04:09 +0000
 categories: dotnet blog
-canonical_url: "https://dev.to/actor-dev/trupe-implementing-actor-model-in-net-5hch"
+sources:
+  - "https://dev.to/actor-dev/trupe-implementing-actor-model-in-net-5hch"
+tags: ["architecture", "resilience", "dotnet"]
 ---
 
 Building concurrent, fault-tolerant systems in .NET is rarely a straight line. Many of us have spent countless hours debugging race conditions, untangling deadlocks, or scratching our heads at intermittent failures in distributed environments. Traditional shared-memory concurrency, even with modern C# features, can quickly become a straitjacket when scaling out or dealing with unpredictable network boundaries. The complexity grows exponentially with more threads, more services, and more external dependencies.

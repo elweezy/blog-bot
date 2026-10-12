@@ -184,6 +184,42 @@ public sealed class GeminiClient : ILlmClient
         }, ct, [model]);
     }
 
+    public Task<Dictionary<int, string>> RepairSentencesAsync(IReadOnlyList<RepairRequest> requests, CancellationToken ct = default)
+    {
+        var schema = new
+        {
+            type = "ARRAY",
+            items = new
+            {
+                type = "OBJECT",
+                properties = new Dictionary<string, object>
+                {
+                    ["id"] = new { type = "INTEGER" },
+                    ["replacement"] = new { type = "STRING" }
+                },
+                required = new[] { "id", "replacement" }
+            }
+        };
+
+        // Same 0..n-1 numbering as the fact-check, mapped back afterwards.
+        var payload = JsonSerializer.Serialize(requests.Select((r, i) =>
+            new { id = i, kind = r.Kind, sentence = r.Text, rejected_because = r.Reason, evidence = r.Evidence }));
+
+        return CallAsync("repair", Prompts.RepairSystem, Prompts.RepairUser(payload), schema, json =>
+        {
+            using var doc = JsonDocument.Parse(json);
+            var result = new Dictionary<int, string>();
+            foreach (var item in doc.RootElement.EnumerateArray())
+            {
+                var i = item.GetProperty("id").GetInt32();
+                if (i >= 0 && i < requests.Count)
+                    result[requests[i].Id] = item.GetProperty("replacement").GetString() ?? string.Empty;
+            }
+
+            return result;
+        }, ct);
+    }
+
     public async Task<string> RewriteTeaserAsync(IReadOnlyList<string> verifiedSentences, CancellationToken ct = default)
     {
         var teaser = await CallAsync("teaser", Prompts.TeaserSystem, Prompts.TeaserUser(verifiedSentences), schema: null, text => text, ct);

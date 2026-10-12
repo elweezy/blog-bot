@@ -36,6 +36,12 @@ public interface ILlmClient
     Task<List<ClaimVerdict>> VerifyClaimsAsync(IReadOnlyList<ClaimCheck> claims, string model, CancellationToken ct = default);
 
     /// <summary>
+    /// For each rejected sentence, returns a replacement that matches the evidence, an opinion-framed version, or an
+    /// empty string to delete it. Ids the model doesn't answer are absent from the result.
+    /// </summary>
+    Task<Dictionary<int, string>> RepairSentencesAsync(IReadOnlyList<RepairRequest> requests, CancellationToken ct = default);
+
+    /// <summary>
     /// Writes a 2-3 sentence teaser using only facts from the given verified sentences.
     /// </summary>
     Task<string> RewriteTeaserAsync(IReadOnlyList<string> verifiedSentences, CancellationToken ct = default);

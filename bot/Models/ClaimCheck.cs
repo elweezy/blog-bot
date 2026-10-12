@@ -11,3 +11,6 @@ public sealed class ClaimVerdict
     public bool Supported { get; set; }
     public string Reason { get; set; } = string.Empty;
 }
+
+/// <summary>A sentence the fact-checker rejected, sent back to the editor with the reason and the evidence.</summary>
+public sealed record RepairRequest(int Id, string Kind, string Text, string Reason, IReadOnlyList<string> Evidence);

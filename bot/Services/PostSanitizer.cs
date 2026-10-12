@@ -161,13 +161,27 @@ public sealed partial class PostSanitizer
     public static string ProseOnly(string markdown) => FencedBlock().Replace(markdown, " ");
 
     /// <summary>
+    /// The description is the RSS summary Zapier posts to LinkedIn, so its figures must be in the sources too.
+    /// </summary>
+    public static List<Issue> FindTeaserIssues(string description, string sourceMaterial) =>
+        UnsupportedNumbers(description, sourceMaterial)
+            .Select(claim => new Issue(
+                $"The description (LinkedIn teaser) uses the figure \"{claim}\", which does not appear in the sources. " +
+                "Use a figure the sources state or describe it qualitatively.",
+                Blocking: true))
+            .ToList();
+
+    /// <summary>
     /// Metric-like figures in the prose (money, latency, percentages, token counts, multipliers) whose numbers are not
     /// in the source text. Sentences that state an explicit assumption are exempt.
     /// </summary>
     public static List<string> UnsupportedNumbers(string prose, string sourceMaterial)
     {
-        // "number|unit" pairs the sources state, e.g. "0.3|$", "261|ms", "96.9|%".
-        var sourceFigures = MetricClaim().Matches(sourceMaterial).SelectMany(Figures).ToHashSet();
+        // "number|unit" pairs the sources state, e.g. "0.3|$", "261|ms", "96.9|%". Counts of things ("94 queries")
+        // are phrased too many ways ("94/105", "94 of them") to require the unit, so any mention of the number counts.
+        var sourceFigures = MetricClaim().Matches(sourceMaterial).SelectMany(Figures)
+            .Concat(NumberToken().Matches(sourceMaterial).Select(m => NormalizeNumber(m.Value) + "|" + CountUnit))
+            .ToHashSet();
         var result = new List<string>();
 
         foreach (var sentence in Sentences().Split(prose))
@@ -194,11 +208,21 @@ public sealed partial class PostSanitizer
         return NumberToken().Matches(claim.Value).Select(m => NormalizeNumber(m.Value) + "|" + unit);
     }
 
+    private const string CountUnit = "#";
+
+    private static readonly HashSet<string> CountUnits =
+    [
+        "item", "file", "chunk", "vector", "query", "querie", "document", "page", "user", "session", "record", "row",
+        "embedding", "parameter", "param", "call", "gpu"
+    ];
+
     private static string UnitOf(string claim)
     {
         if (claim.Contains('$')) return "$";
 
         var unit = TrailingUnit().Match(claim).Value.Trim().ToLowerInvariant();
+        if (CountUnits.Contains(unit.TrimEnd('s'))) return CountUnit;
+
         return unit switch
         {
             "percent" => "%",
@@ -308,8 +332,9 @@ public sealed partial class PostSanitizer
     [GeneratedRegex(@"(?<=[.!?])\s+|\n+")]
     private static partial Regex Sentences();
 
-    // A figure with a unit or currency, optionally as a range: "$0.30", "2 to 5 seconds", "200-400 ms", "96.9%", "10x".
-    [GeneratedRegex(@"(\$\s?\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\$?\d[\d,]*(\.\d+)?)?(\s?(million|billion|k|m|bn)\b)?)|(\b\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\d[\d,]*(\.\d+)?)?\s?(%|percent\b|ms\b|milliseconds?\b|seconds?\b|secs?\b|minutes?\b|hours?\b|x\b|×|times (faster|cheaper|slower|more|less)|million\b|billion\b|[kmb] tokens\b|tokens\b|requests\b|rps\b|qps\b|gb\b|mb\b|kb\b|tb\b|s\b|fps\b|-d\b|cents?\b|dollars?\b))", RegexOptions.IgnoreCase)]
+    // A figure with a unit or currency, optionally as a range: "$0.30", "2 to 5 seconds", "200-400 ms", "96.9%", "10x",
+    // or a count of things ("100,000 vectors", "250k items", "16 sessions").
+    [GeneratedRegex(@"(\$\s?\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\$?\d[\d,]*(\.\d+)?)?(\s?(million|billion|k|m|bn)\b)?)|(\b\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\d[\d,]*(\.\d+)?)?([kmb](?=\s))?\s?(%|percent\b|ms\b|milliseconds?\b|seconds?\b|secs?\b|minutes?\b|hours?\b|x\b|×|times (faster|cheaper|slower|more|less)|million\b|billion\b|[kmb] tokens\b|tokens\b|requests\b|rps\b|qps\b|gb\b|mb\b|kb\b|tb\b|s\b|fps\b|-d\b|cents?\b|dollars?\b|items?\b|files?\b|chunks?\b|vectors?\b|quer(y|ies)\b|documents?\b|pages?\b|users?\b|sessions?\b|records?\b|rows?\b|embeddings?\b|parameters\b|params\b|calls\b|gpus?\b))", RegexOptions.IgnoreCase)]
     private static partial Regex MetricClaim();
 
     [GeneratedRegex(@"\d[\d,]*(\.\d+)?")]

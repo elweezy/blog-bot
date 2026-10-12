@@ -2,6 +2,7 @@
 layout: default
 ---
 
+<div class="post-layout">
 <article class="post">
   <header class="post-header">
     <h1>{{ page.title }}</h1>
@@ -30,6 +31,8 @@ layout: default
     </section>
     {% endif %}
 
+    {% include related-posts.html %}
+
     <section>
       <h2>Share</h2>
       <div class="share">
@@ -50,6 +53,57 @@ layout: default
     {% endif %}
   </footer>
 </article>
+
+<aside class="toc" aria-labelledby="toc-title" hidden>
+  <p class="toc-title" id="toc-title">Contents</p>
+  <ol></ol>
+</aside>
+</div>
+
+<script>
+  // "Contents" list for long posts: built from the post's h2 headings, shown in the right margin on wide screens.
+  (function () {
+    var toc = document.querySelector(".toc");
+    // Older posts use ### for sections, newer ones ##; list both and indent ### when ## sections exist.
+    var headings = Array.prototype.slice.call(document.querySelectorAll(".post-content h2[id], .post-content h3[id]"));
+    var hasH2 = headings.some(function (h) { return h.tagName === "H2"; });
+    if (!toc || headings.length < 3) return;
+
+    var list = toc.querySelector("ol");
+    var links = headings.map(function (h) {
+      var li = document.createElement("li");
+      if (hasH2 && h.tagName === "H3") li.className = "sub";
+      var a = document.createElement("a");
+      a.href = "#" + h.id;
+      a.textContent = h.textContent;
+      li.appendChild(a);
+      list.appendChild(li);
+      return a;
+    });
+    toc.hidden = false;
+
+    // Highlight the last heading that has scrolled past the top third of the screen.
+    var ticking = false;
+    function update() {
+      ticking = false;
+      var line = window.innerHeight / 3;
+      var current = -1;
+      headings.forEach(function (h, i) {
+        if (h.getBoundingClientRect().top <= line) current = i;
+      });
+      links.forEach(function (a, i) {
+        a.toggleAttribute("aria-current", i === current);
+      });
+    }
+    window.addEventListener("scroll", function () {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    }, { passive: true });
+    update();
+  })();
+</script>
 
 <script type="module">
   // Turn ```mermaid fences into hand-drawn diagrams, and the "*Figure: ...*" line under each into its caption.

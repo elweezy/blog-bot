@@ -281,7 +281,11 @@ public sealed class BlogWriterService
         var allQuotes = claims.SelectMany(c => c.Quotes).ToList();
         var allEvidence = Evidence(allQuotes, sources);
 
-        var checks = claims.Select(c => new ClaimCheck(c.Id, "sentence", c.Text, Evidence(c.Quotes, sources))).ToList();
+        // Rows of the writer's own Draft design table are design judgments, checked only for facts and figures.
+        var designText = draftDesignAt.Success ? Citations.StripMarkers(markdown[draftDesignAt.Index..]) : string.Empty;
+        string KindOf(Citations.Claim c) => c.Text.StartsWith('|') && designText.Contains(c.Text) ? "design" : "sentence";
+
+        var checks = claims.Select(c => new ClaimCheck(c.Id, KindOf(c), c.Text, Evidence(c.Quotes, sources))).ToList();
         checks.AddRange(uncited.Select(c => new ClaimCheck(c.Id, "uncited", c.Text, allEvidence)));
 
         var diagrams = PostSanitizer.MermaidBlocks(markdown)
@@ -300,10 +304,7 @@ public sealed class BlogWriterService
 
         var rejected = await RejectedByAnyVerifierAsync(checks, ct);
 
-        var rejectedCited = claims.Where(c => rejected.ContainsKey(c.Id)).ToList();
-        var rejectedUncited = uncited.Where(c => rejected.ContainsKey(c.Id)).ToList();
         var keptDiagrams = diagrams.Where((_, i) => !rejected.ContainsKey(DiagramIdBase + i)).Count();
-
         foreach (var (id, reason) in rejected)
         {
             var what = id == TeaserId ? "teaser"
@@ -313,13 +314,22 @@ public sealed class BlogWriterService
             Console.WriteLine($"  rejected: {Truncate(what, 160)}\n    because {Truncate(reason, 200)}");
         }
 
+        // One repair round: rejected sentences go back to the editor with the reason and evidence; whatever it
+        // returns is fact-checked again by both models. Anything that still fails is deleted.
+        var proseById = claims.Concat(uncited).ToDictionary(c => c.Id);
+        var repairable = proseById.Values.Where(c => rejected.ContainsKey(c.Id)).ToList();
+        var outcome = await RepairAsync(repairable, rejected, checks, allEvidence, sources, ct);
+
+        var deletedCited = claims.Count(c => outcome.TryGetValue(c.Id, out var r) && r.Length == 0);
+        var deletedUncited = uncited.Count(c => outcome.TryGetValue(c.Id, out var r) && r.Length == 0);
+        var repaired = outcome.Count(o => o.Value.Length > 0);
+
         var totalProse = claims.Count + uncited.Count;
-        var removed = rejectedCited.Count + rejectedUncited.Count;
-        if (claims.Count < MinCitedClaims || rejectedCited.Count > claims.Count * MaxRejectedShare ||
-            removed > totalProse * MaxRemovedShare)
+        if (claims.Count < MinCitedClaims || deletedCited > claims.Count * MaxRejectedShare ||
+            deletedCited + deletedUncited > totalProse * MaxRemovedShare)
         {
-            Console.WriteLine($"Fact-check: rejected {rejectedCited.Count}/{claims.Count} cited and " +
-                              $"{rejectedUncited.Count}/{uncited.Count} uncited sentences; too much to publish.");
+            Console.WriteLine($"Fact-check: after repair, {deletedCited}/{claims.Count} cited and " +
+                              $"{deletedUncited}/{uncited.Count} uncited sentences still fail; too much to publish.");
             return null;
         }
 
@@ -327,7 +337,7 @@ public sealed class BlogWriterService
         for (var i = diagrams.Count - 1; i >= 0; i--)
             if (rejected.ContainsKey(DiagramIdBase + i))
                 markdown = RemoveDiagram(markdown, diagrams[i]);
-        markdown = Citations.RemoveClaims(markdown, rejectedCited.Concat(rejectedUncited).ToList());
+        markdown = Citations.ReplaceClaims(markdown, outcome.ToDictionary(o => proseById[o.Key].Text, o => o.Value));
 
         var description = post.Description;
         var teaserNote = "verified";
@@ -337,8 +347,8 @@ public sealed class BlogWriterService
         }
 
         VerificationSummary =
-            $"{claims.Count - rejectedCited.Count}/{claims.Count} cited and {uncited.Count - rejectedUncited.Count}/{uncited.Count} " +
-            $"uncited sentences kept after checks by {string.Join(" and ", _usedVerifiers)}, " +
+            $"{claims.Count - deletedCited}/{claims.Count} cited and {uncited.Count - deletedUncited}/{uncited.Count} " +
+            $"uncited sentences kept ({repaired} repaired and re-checked) by {string.Join(" and ", _usedVerifiers)}, " +
             $"{keptDiagrams}/{diagrams.Count} diagrams kept, teaser {teaserNote}";
         Console.WriteLine($"Fact-check: {VerificationSummary}.");
 
@@ -351,6 +361,76 @@ public sealed class BlogWriterService
     /// are asked again once; anything still unanswered counts as rejected. Throws when a slot has no usable model,
     /// so nothing is published without two independent checks.
     /// </summary>
+    /// <summary>
+    /// Asks the editor to fix rejected sentences, validates their quotes, and fact-checks the replacements again.
+    /// Returns, per rejected sentence id, the verified replacement or an empty string meaning "delete".
+    /// </summary>
+    private async Task<Dictionary<int, string>> RepairAsync(
+        List<Citations.Claim> rejectedProse,
+        Dictionary<int, string> reasons,
+        List<ClaimCheck> originalChecks,
+        List<string> allEvidence,
+        SourceSet sources,
+        CancellationToken ct)
+    {
+        var outcome = rejectedProse.ToDictionary(c => c.Id, _ => string.Empty);
+        if (rejectedProse.Count == 0) return outcome;
+
+        var kinds = originalChecks.ToDictionary(c => c.Id, c => c.Kind);
+        var requests = rejectedProse.Select(c => new RepairRequest(
+            c.Id, kinds[c.Id], c.Text, reasons[c.Id],
+            c.Quotes.Count > 0 ? Evidence(c.Quotes, sources).Concat(allEvidence).Distinct().Take(40).ToList() : allEvidence)).ToList();
+
+        Dictionary<int, string> replacements;
+        try
+        {
+            replacements = await _llm.RepairSentencesAsync(requests, ct);
+        }
+        catch (InvalidOperationException ex) when (!ct.IsCancellationRequested)
+        {
+            Console.WriteLine($"  repair unavailable ({Truncate(ex.Message.Split('\n')[0], 120)}); deleting rejected sentences.");
+            return outcome;
+        }
+
+        // A replacement must keep its quotes real; otherwise it is dropped before the re-check.
+        var rechecks = new List<ClaimCheck>();
+        foreach (var request in requests)
+        {
+            if (!replacements.TryGetValue(request.Id, out var replacement) || string.IsNullOrWhiteSpace(replacement))
+                continue;
+
+            replacement = Citations.FixPlacement(replacement.Trim());
+            if (Citations.InvalidQuotes(replacement, sources.Texts).Count > 0)
+            {
+                Console.WriteLine($"  repair dropped (its quote is not in the source): {Truncate(Citations.StripMarkers(replacement), 140)}");
+                continue;
+            }
+
+            var quotes = Citations.QuotesIn(replacement);
+            var kind = request.Kind == "design" ? "design" : quotes.Count > 0 ? "sentence" : "uncited";
+            replacements[request.Id] = replacement;
+            rechecks.Add(new ClaimCheck(request.Id, kind, Citations.StripMarkers(replacement).Trim(),
+                quotes.Count > 0 ? Evidence(quotes, sources) : allEvidence));
+        }
+
+        if (rechecks.Count == 0) return outcome;
+
+        var stillRejected = await RejectedByAnyVerifierAsync(rechecks, ct);
+        foreach (var check in rechecks)
+        {
+            if (stillRejected.TryGetValue(check.Id, out var why))
+            {
+                Console.WriteLine($"  repair failed: {Truncate(check.Text, 140)}\n    because {Truncate(why, 160)}");
+                continue;
+            }
+
+            outcome[check.Id] = replacements[check.Id];
+            Console.WriteLine($"  repaired: {Truncate(check.Text, 160)}");
+        }
+
+        return outcome;
+    }
+
     private async Task<Dictionary<int, string>> RejectedByAnyVerifierAsync(List<ClaimCheck> checks, CancellationToken ct)
     {
         var rejected = new Dictionary<int, string>();

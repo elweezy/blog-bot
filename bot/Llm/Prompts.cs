@@ -120,6 +120,9 @@ public static class Prompts
         - Figures in diagrams and the Draft design table follow the same rule: put the matching citation in the
           caption, or keep the figure out.
         - Any sentence the fact-checker can't match to its quote is deleted, so be precise rather than fluent.
+        - Every sentence without a citation must read as your own view or reasoning ("I think...", "I'd...", "My
+          read is...", "That suggests..."). Don't write uncited statements of fact or generalizations such as
+          "Dense embeddings struggle on identifiers" or "Most teams...": cite them or frame them as your view.
 
         Example (sources say: [S1] "Searching loads only the text encoder (~250 MB) and shows results about a tenth
         of a second after you stop typing." and [S2] "Search is brute force: the query vector against all of them,
@@ -263,36 +266,62 @@ public static class Prompts
         "Verified sentences from the post:\n" + string.Join("\n", sentences.Select(s => "- " + s));
 
     public const string VerifierSystem = """
-        You are a strict fact-checker for a technical blog. You receive items from a post, each with evidence:
+        You are a careful fact-checker for a technical blog. You receive items from a post, each with evidence:
         exact passages from the sources (with some surrounding context). Decide for each item whether the evidence
         supports it.
 
-        "supported" is true only if every factual element of the item is stated by the evidence:
-        - every number, and what it measures and under which conditions;
-        - every comparison, and exactly what is being compared (for example, "A then B" versus "B alone" is not the
-          same as "A versus B");
-        - who did, said, built or measured something;
-        - every component, step or connection described as part of someone's system.
-        Wording may differ. Opinions clearly framed as the writer's own ("I think", "I'd", "my guess") need no
-        support. A claim that generalizes beyond the evidence, adds details, or changes a meaning is NOT supported.
+        The test: would a careful reader come away believing something the evidence does not say? If yes, answer
+        false. That covers:
+        - a number that isn't in the evidence, or a number used for something other than what it measures;
+        - a comparison the evidence doesn't make, or a different comparison (for example "A then B" versus
+          "B alone" is not "A versus B");
+        - a wrong person, project or source for a statement or result;
+        - a component, step or capability of someone's system that the evidence doesn't describe;
+        - a generalization the evidence doesn't make ("most teams", "always", "matches cloud accuracy").
+
+        These are fine and must NOT be rejected:
+        - paraphrase and summary that keeps the meaning;
+        - standard technical equivalents (brute-force scoring of vectors is a scan with dot products; a helper
+          process that indexes files and exits is a batch job);
+        - descriptive words that add no new fact;
+        - opinions, recommendations and reasoning clearly framed as the writer's own ("I think", "I'd", "my read is",
+          "that suggests").
 
         Kinds:
-        - "sentence": one sentence, list item or table row.
-        - "diagram": a Mermaid diagram with its caption. Supported only if every node and edge is in the evidence,
-          or the caption clearly presents it as the writer's own sketch or proposal.
-        - "teaser": the post summary. Every factual statement in it must be supported.
+        - "sentence": one sentence, list item or table row that cites evidence.
         - "uncited": a sentence written without its own evidence; the evidence given is everything the post cites.
-          Supported only if it is clearly framed as the writer's view ("I think", "I'd", "my guess"), a
-          recommendation, a question, or reasoning that adds no new facts. A factual statement about what people
-          or teams do, how a system works, what "usually" or "most" happens, or any amount (including words like
-          "half", "doubling", "most") that the evidence does not state is NOT supported. An opinion written as a
-          fact ("X is the easiest part of the job") is NOT supported.
+          Supported if it is framed as the writer's view, a recommendation, a question, or reasoning that adds no
+          new facts. A statement of fact about the world (what teams do, how systems behave, amounts including
+          words like "half" or "most") that the evidence doesn't support is not.
+        - "design": a row of the writer's own Draft design table. Trade-off judgments ("adds latency", "harder to
+          maintain") are the writer's assessment and are fine. Reject only if the row states a specific fact about
+          a named project or source, or a figure, that the evidence doesn't support.
+        - "diagram": a Mermaid diagram with its caption. Supported if every node and edge is in the evidence, or the
+          caption presents it as the writer's own sketch or proposal.
+        - "teaser": the post summary. Every factual statement in it must be supported.
 
-        Return one verdict for every id, with a one-sentence reason. When in doubt, answer false.
+        Return one verdict for every id, with a one-sentence reason that names the unsupported part.
         """;
 
     public static string VerifierUser(string itemsJson) => $"""
         Items (JSON):
+        {itemsJson}
+        """;
+
+    public const string RepairSystem = """
+        A fact-checker rejected some sentences of a blog post. For each one you get the sentence, the reason it was
+        rejected, and the evidence available. Return a replacement for each, choosing one:
+        1. Rewrite it so every fact matches the evidence. Keep a citation marker [[S1: "exact words"]] with words
+           copied character for character from the evidence, placed before the final punctuation.
+        2. If it is really the writer's judgment, reframe it clearly as opinion ("I think...", "I'd...") without
+           stating new facts.
+        3. Return an empty string to delete it, when neither works.
+        Never add facts that aren't in the evidence. Keep the sentence's role in the paragraph (same subject, similar
+        length). For table rows, return the whole row with the same number of columns.
+        """;
+
+    public static string RepairUser(string itemsJson) => $"""
+        Rejected sentences (JSON):
         {itemsJson}
         """;
 

@@ -110,25 +110,44 @@ public static partial class Citations
     /// <summary>
     /// Removes the units whose stripped text matches a rejected claim. Paragraphs, lists and tables keep their shape.
     /// </summary>
-    public static string RemoveClaims(string markdown, IReadOnlyCollection<Claim> rejected)
+    public static string RemoveClaims(string markdown, IReadOnlyCollection<Claim> rejected) =>
+        ReplaceClaims(markdown, rejected.ToDictionary(c => c.Text, _ => string.Empty));
+
+    /// <summary>
+    /// Replaces units whose stripped text is a key with the given text (empty removes the unit). Leading whitespace,
+    /// list markers and line breaks are kept so paragraphs, lists and tables keep their shape.
+    /// </summary>
+    public static string ReplaceClaims(string markdown, IReadOnlyDictionary<string, string> replacements)
     {
-        if (rejected.Count == 0) return markdown;
-        var rejectedTexts = rejected.Select(c => c.Text).ToHashSet();
+        if (replacements.Count == 0) return markdown;
 
         var sb = new StringBuilder();
         foreach (var unit in Units(markdown))
         {
-            if (!unit.InCode && rejectedTexts.Contains(StripMarkers(unit.Text).Trim()))
+            var key = StripMarkers(unit.Text).Trim();
+            if (unit.InCode || !replacements.TryGetValue(key, out var replacement))
             {
-                // Keep line breaks so the surrounding structure stays intact.
-                if (unit.Text.EndsWith('\n')) sb.Append('\n');
+                sb.Append(unit.Text);
                 continue;
             }
 
-            sb.Append(unit.Text);
+            var leading = unit.Text[..(unit.Text.Length - unit.Text.TrimStart().Length)];
+            var newline = unit.Text.EndsWith('\n') ? "\n" : string.Empty;
+            if (replacement.Length == 0)
+            {
+                sb.Append(newline);
+                continue;
+            }
+
+            // A list item keeps its marker even if the model returned the sentence without it.
+            var listMarker = ListItem().Match(key);
+            if (listMarker.Success && !ListItem().IsMatch(replacement))
+                replacement = listMarker.Value.TrimStart() + replacement;
+
+            sb.Append(leading).Append(replacement.Trim()).Append(newline);
         }
 
-        // Drop lines left empty mid-paragraph and collapse the blank lines that removal leaves behind.
+        // Drop list markers left empty and collapse the blank lines that removal leaves behind.
         var text = Regex.Replace(sb.ToString(), @"^[ \t]*([-*]|\d+\.)[ \t]*$\n?", "", RegexOptions.Multiline);
         return Regex.Replace(text, @"\n{3,}", "\n\n").Trim() + "\n";
     }

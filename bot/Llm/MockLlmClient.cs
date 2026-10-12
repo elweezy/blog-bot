@@ -88,6 +88,9 @@ public sealed class MockLlmClient : ILlmClient
     public Task<List<ClaimVerdict>> VerifyClaimsAsync(IReadOnlyList<ClaimCheck> claims, string model, CancellationToken ct = default) =>
         Task.FromResult(claims.Select(c => new ClaimVerdict { Id = c.Id, Supported = true, Reason = "mock" }).ToList());
 
+    public Task<Dictionary<int, string>> RepairSentencesAsync(IReadOnlyList<RepairRequest> requests, CancellationToken ct = default) =>
+        Task.FromResult(requests.ToDictionary(r => r.Id, _ => string.Empty));
+
     public Task<string> RewriteTeaserAsync(IReadOnlyList<string> verifiedSentences, CancellationToken ct = default) =>
         Task.FromResult(string.Join(" ", verifiedSentences.Take(2)));
 

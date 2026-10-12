@@ -91,7 +91,9 @@ public sealed class BlogWriterService
         post.Markdown = await ValidateDiagramsAsync(post.Markdown, ct);
 
         // Removing an unfixable diagram can leave the post without its required structure.
-        var finalIssues = sanitizer.FindIssues(post.Markdown, sourceMaterial).Where(i => i.Blocking).ToList();
+        var finalIssues = sanitizer.FindIssues(post.Markdown, sourceMaterial)
+            .Concat(PostSanitizer.FindTeaserIssues(post.Description, sourceMaterial))
+            .Where(i => i.Blocking).ToList();
         if (finalIssues.Count > 0)
             throw new InvalidOperationException(
                 "Post lost required structure after diagram validation, not publishing it:\n" +
@@ -204,6 +206,7 @@ public sealed class BlogWriterService
             post.Markdown = sanitizer.Clean(post.Markdown);
 
             issues = sanitizer.FindIssues(post.Markdown, sourceMaterial);
+            issues.AddRange(PostSanitizer.FindTeaserIssues(post.Description, sourceMaterial));
             LogIssues($"Edit {attempt}", issues);
 
             if (!issues.Any(i => i.Blocking))

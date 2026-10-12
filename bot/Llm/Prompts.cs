@@ -40,8 +40,9 @@ public static class Prompts
           "Results appear about 0.1 s after typing stops" is a latency, not a deliberate delay.
         - Anything you infer, predict or generalize beyond the sources must read as your view ("I'd expect...",
           "My guess is..."), never as established fact.
-        - Every price, latency, percentage, multiplier or count must come from the sources. The only exception is a
-          sentence that states an explicit assumption ("Assume 20k requests a day...").
+        - Every price, latency, percentage, multiplier or count (including thresholds like "100,000 vectors") must come
+          from the sources. The only exception is a sentence that states an explicit assumption ("Assume 20k requests
+          a day..."). Where the sources give no threshold, describe it qualitatively ("at a few million vectors").
         - When describing how a specific project or team's setup works, state only what its sources say. Don't add
           components, routing rules, workflows or motivations they never mentioned. If you want to propose how it
           could work, do that in the Draft design and present it as your design.
@@ -106,7 +107,9 @@ public static class Prompts
 
     private const string CodeAndFormat = """
         ## Code
-        Only include code if it clarifies something prose and diagrams can't. At most two snippets, each 30 lines or
+        Only include code if it clarifies something prose and diagrams can't. If the code is your sketch of something
+        a source describes in words, say so right before it ("Here's the scoring rule the author describes, as a
+        sketch:"), so it isn't mistaken for the project's own code. At most two snippets, each 30 lines or
         fewer, in the language the sources use (Python, TypeScript or C#), with a language hint on the fence.
         No boilerplate, no imports-only snippets.
 
@@ -160,6 +163,7 @@ public static class Prompts
         - "description": 2 or 3 sentences, at most 300 characters. It is the RSS summary that gets posted to LinkedIn
           with the link. State the post's sharpest claim or tension plainly. First-person opinion is fine; invented
           experience is not. No hashtags, no emoji, no engagement bait like "What do you think?" or "Thoughts?".
+          Any figure in it must come from the sources, never from your own Draft design assumptions.
         - "tags": 2 to 4 tags from this fixed list, most specific first, so related posts can be matched:
           {string.Join(", ", TagVocabulary.All)}.
         """);

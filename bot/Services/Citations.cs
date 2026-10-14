@@ -139,16 +139,18 @@ public static partial class Citations
                 continue;
             }
 
-            // A list item keeps its marker even if the model returned the sentence without it.
-            var listMarker = ListItem().Match(key);
-            if (listMarker.Success && !ListItem().IsMatch(replacement))
-                replacement = listMarker.Value.TrimStart() + replacement;
+            // A list item or blockquote line ("> - ") keeps its prefix even if the model returned the sentence without it.
+            var prefix = BlockPrefix().Match(key).Value;
+            if (prefix.Length > 0 && !replacement.TrimStart().StartsWith(prefix.Trim()))
+                replacement = prefix + replacement.TrimStart();
 
             sb.Append(leading).Append(replacement.Trim()).Append(newline);
         }
 
         // Drop list markers left empty and collapse the blank lines that removal leaves behind.
-        var text = Regex.Replace(sb.ToString(), @"^[ \t]*([-*]|\d+\.)[ \t]*$\n?", "", RegexOptions.Multiline);
+        var text = Regex.Replace(sb.ToString(), @"^[ \t]*(>[ \t]*)?([-*]|\d+\.)[ \t]*$\n?", "", RegexOptions.Multiline);
+        // A TL;DR heading whose bullets were all removed goes too.
+        text = Regex.Replace(text, @"^>[ \t]*\*\*TL;DR\*\*[ \t]*\n(?!>)", "", RegexOptions.Multiline);
         text = Regex.Replace(text, @"\n{3,}", "\n\n");
         return TrimParagraphStarts(text).Trim() + "\n";
     }
@@ -250,6 +252,10 @@ public static partial class Citations
 
     [GeneratedRegex(@"^\s*([-*+]|\d+\.)\s")]
     private static partial Regex ListItem();
+
+    // Leading blockquote markers and/or a list marker: "> - ", "- ", "> ", "1. ".
+    [GeneratedRegex(@"^(\s*>\s?)*(\s*([-*+]|\d+\.)\s+)?")]
+    private static partial Regex BlockPrefix();
 
     // Split after sentence-ending punctuation and a space, before the next sentence's first character.
     [GeneratedRegex(@"(?<=[.!?][""')\]]?)(?=\s+[A-Z0-9""'(\[*`])")]

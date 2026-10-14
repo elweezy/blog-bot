@@ -106,15 +106,26 @@ layout: default
 </script>
 
 <script type="module">
-  // Turn ```mermaid fences into hand-drawn diagrams, and the "*Figure: ...*" line under each into its caption.
+  // Turn ```mermaid fences into numbered, colourful figures with an expand button, and the "*Figure: ...*" line
+  // under each into its caption.
   const hosts = new Set();
   document.querySelectorAll(".post-content div.language-mermaid, .post-content pre > code.language-mermaid")
     .forEach((el) => hosts.add(el.closest("div.language-mermaid") || el.closest("pre")));
 
   if (hosts.size > 0) {
+    let number = 0;
     hosts.forEach((host) => {
+      number += 1;
       const figure = document.createElement("figure");
       figure.className = "diagram";
+      figure.id = `figure-${number}`;
+
+      const expand = document.createElement("button");
+      expand.type = "button";
+      expand.className = "diagram-expand";
+      expand.setAttribute("aria-label", `Expand figure ${number}`);
+      expand.textContent = "⤢ Expand";
+      figure.appendChild(expand);
       const pre = document.createElement("pre");
       pre.className = "mermaid";
       pre.textContent = host.textContent.trim();
@@ -125,7 +136,7 @@ layout: default
       if (/^Figure:/i.test(text)) {
         const caption = document.createElement("figcaption");
         const label = document.createElement("b");
-        label.textContent = "Figure. ";
+        label.textContent = `Figure ${number}. `;
         caption.append(label, text.replace(/^Figure:\s*/i, ""));
         figure.appendChild(caption);
         next.remove();
@@ -138,25 +149,26 @@ layout: default
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: "strict",
-      look: "handDrawn",
+      look: "classic",
       theme: "base",
       fontFamily: '"IBM Plex Sans", sans-serif',
-      sequence: { mirrorActors: false },
+      flowchart: { curve: "basis", padding: 18, nodeSpacing: 46, rankSpacing: 54, htmlLabels: true },
+      sequence: { mirrorActors: false, actorMargin: 60, boxMargin: 12 },
       themeVariables: {
         fontSize: "15px",
         background: token("--surface"),
-        primaryColor: token("--surface"),
-        primaryBorderColor: token("--fg"),
+        primaryColor: token("--d1-fill"),
+        primaryBorderColor: token("--d1-line"),
         primaryTextColor: token("--fg"),
-        secondaryColor: token("--accent-soft"),
-        tertiaryColor: token("--code-bg"),
+        secondaryColor: token("--d2-fill"),
+        tertiaryColor: token("--d3-fill"),
         lineColor: token("--muted"),
         textColor: token("--fg"),
         edgeLabelBackground: token("--surface"),
         clusterBkg: token("--code-bg"),
         clusterBorder: token("--border"),
-        actorBkg: token("--surface"),
-        actorBorder: token("--fg"),
+        actorBkg: token("--d1-fill"),
+        actorBorder: token("--d1-line"),
         actorTextColor: token("--fg"),
         signalColor: token("--muted"),
         signalTextColor: token("--fg"),
@@ -167,12 +179,30 @@ layout: default
     });
     await mermaid.run({ querySelector: ".diagram pre.mermaid" });
 
-    // Don't shrink wide diagrams below a readable size; let them scroll inside their figure instead.
+    // Expanded view: the rendered diagram, full screen, scrollable and zoomable on phones.
+    const viewer = document.createElement("dialog");
+    viewer.className = "diagram-viewer";
+    viewer.innerHTML = '<button type="button" class="diagram-viewer-close" aria-label="Close">✕</button><div class="diagram-viewer-body"></div>';
+    document.body.appendChild(viewer);
+    viewer.querySelector(".diagram-viewer-close").addEventListener("click", () => viewer.close());
+    viewer.addEventListener("click", (e) => { if (e.target === viewer) viewer.close(); });
+    document.querySelectorAll(".diagram").forEach((figure) => {
+      figure.querySelector(".diagram-expand").addEventListener("click", () => {
+        const body = viewer.querySelector(".diagram-viewer-body");
+        body.replaceChildren(figure.querySelector("svg").cloneNode(true));
+        const caption = figure.querySelector("figcaption");
+        if (caption) body.appendChild(caption.cloneNode(true));
+        viewer.showModal();
+      });
+    });
+
+    // On phones, don't shrink wide diagrams below a readable size; let them scroll inside their figure (or open
+    // them full screen). On wider screens they always fit the column.
     document.querySelectorAll(".diagram svg").forEach((svg) => {
       const natural = svg.viewBox?.baseVal?.width || 0;
       const available = svg.closest(".diagram").clientWidth - 40;
       const readable = Math.round(natural * 0.8);
-      if (readable > available) {
+      if (window.innerWidth < 700 && readable > available) {
         svg.style.maxWidth = "none";
         svg.style.width = readable + "px";
       }

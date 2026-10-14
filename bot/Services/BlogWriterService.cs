@@ -509,7 +509,7 @@ public sealed class BlogWriterService
         var verified = Citations.ExtractClaims(markdown)
             .Select(c => c.Text)
             .Where(t => !t.StartsWith('*') && !t.StartsWith('|'))
-            .Select(t => t.TrimStart('-', ' '))
+            .Select(t => t.TrimStart('>', '-', ' '))
             .ToList();
 
         var rewritten = await _llm.RewriteTeaserAsync(verified, ct);

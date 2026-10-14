@@ -59,6 +59,11 @@ public static class Prompts
         - The first sentence carries substance: a concrete fact, number, claim or tension taken from the sources.
           No scene-setting, no question to the reader, no "In this post", no "Imagine...".
         - Mix short and long sentences. Some paragraphs are a single sentence. Use contractions.
+        - Make it a good read, not a report. Open with tension: a surprising number, a contradiction, a problem
+          the reader has had. Give each section one vivid analogy or concrete image ("the index is a phone book,
+          the query is someone reading it end to end in a few milliseconds"). A dry, wry aside is welcome now and
+          then (at most one per section). Humour is never at a person's expense, never replaces a fact, and never
+          adds one.
         - Take a position and defend it with trade-offs. Say so when the popular approach is wrong or overkill.
         - Use the first person for opinions at least two or three times ("I'd start with...", "I think...",
           "I'm not convinced..."). This is what makes the post read like a person wrote it.
@@ -80,6 +85,8 @@ public static class Prompts
         - Show the mechanism, not its name: the path a request takes, the boundary it crosses, the hop that gets added.
         - To compare options, draw the difference (two subgraphs, or before/after), never two disconnected boxes.
         - 4 to 9 nodes. Node labels of 1 to 4 words. Label every edge with what flows or happens: A -->|embeds query| B
+        - Start every node label with one fitting emoji as an icon, inside the quotes: A["🔎 Search bar"],
+          DB[("🗄️ SQLite index")], M["🤖 Text encoder"]. Use the same emoji for the same kind of thing throughout.
         - Readers are often on phones: use `flowchart TD` unless the widest row has 4 nodes or fewer, and keep
           sequence diagrams to 5 participants or fewer.
         - Use `flowchart LR`, `flowchart TD`, `sequenceDiagram` or `stateDiagram-v2`. No styling, no classDef, no
@@ -146,7 +153,12 @@ public static class Prompts
 
         ## Format
         - GitHub-flavored Markdown. No H1, the page prints the title.
-        - ## and ### headings that say something specific about this topic. Never generic labels like
+        - Begin with a TL;DR blockquote: a line "> **TL;DR**" followed by exactly three short bullets ("> - ..."),
+          each a cited fact from the sources. Then the opening paragraph.
+        - Somewhere in the middle, add one pull quote: a blockquote ("> ...") holding your single sharpest opinion,
+          in one or two sentences, framed as your view ("I think...", "My read is..."). No facts in it.
+        - ## and ### headings with personality that say something specific about this topic ("The 250 MB trick",
+          "Why rank fusion lost"), never generic labels like
           "Introduction", "Why it matters", "Deep dive", "Pitfalls", "Best practices" or "Conclusion".
         - 600 to 900 words, not counting code and diagrams. One idea, argued well, beats a survey.
         - Don't put links in the text and don't mention "the sources" or "source material"; the page lists sources.

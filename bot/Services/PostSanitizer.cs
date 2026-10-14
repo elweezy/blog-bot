@@ -142,6 +142,17 @@ public sealed partial class PostSanitizer
         if (MermaidBlocks(markdown).Count == 0)
             issues.Add(new Issue("No ```mermaid diagram. Add at least one diagram that shows the mechanism.", Blocking: true));
 
+        foreach (var sentence in Sentences().Split(prose).Select(s => s.Trim()).Where(s => IsIncomplete(s)))
+            issues.Add(new Issue($"Incomplete sentence: \"{sentence}\". Finish it or delete it.", Blocking: true));
+
+        var diagrams = MermaidBlocks(markdown);
+        for (var i = 0; i < diagrams.Count; i++)
+        {
+            var after = markdown[(diagrams[i].Index + diagrams[i].Length)..];
+            if (!CaptionLine().IsMatch(after))
+                issues.Add(new Issue($"Diagram {i + 1} has no caption. Add one italic line under it starting with \"*Figure:\".", Blocking: true));
+        }
+
         if (!DraftDesignHeading().IsMatch(markdown))
             issues.Add(new Issue("Missing the \"## Draft design\" section.", Blocking: true));
 
@@ -155,6 +166,21 @@ public sealed partial class PostSanitizer
             issues.Add(new Issue("Contains emoji. Remove them.", Blocking: false));
 
         return issues;
+    }
+
+    /// <summary>
+    /// A sentence cut off mid-thought: it ends right after a word that can't end a sentence ("..., even if.").
+    /// With <paramref name="requireFinalPunctuation"/> (used for repaired sentences), a missing final period counts
+    /// too. Headings, list items, table rows and captions are not sentences and are skipped.
+    /// </summary>
+    public static bool IsIncomplete(string sentence, bool requireFinalPunctuation = false)
+    {
+        var s = sentence.Trim();
+        if (s.Length < 20 || s.StartsWith('#') || s.StartsWith('|') || s.StartsWith('*') || s.StartsWith('-') ||
+            s.StartsWith('>') || char.IsDigit(s[0]) || s.EndsWith(':'))
+            return false;
+
+        return DanglingEnd().IsMatch(s) || (requireFinalPunctuation && !EndsLikeSentence().IsMatch(s));
     }
 
     public static IReadOnlyList<string> BannedPhraseLabels => BannedPhrases.Select(b => b.Label).ToList();
@@ -367,6 +393,16 @@ public sealed partial class PostSanitizer
     // Real tags and autolinks (<script>, </div>, <img ...>, <!-- -->, <https://...>), not "a < b" comparisons.
     [GeneratedRegex(@"<(/?[a-zA-Z][a-zA-Z0-9-]*(\s[^<>]*)?/?|!--.*?--|https?://[^>\s]+)>", RegexOptions.Singleline)]
     private static partial Regex HtmlTag();
+
+    // Words that can't end a sentence; "for that.", "anything but.", "..., though." and "ever since." are fine, so those aren't listed.
+    [GeneratedRegex(@"\b(even if|while|because|although|and|or|unless|whereas)\s*[.!?][""'’”)\]]*$", RegexOptions.IgnoreCase)]
+    private static partial Regex DanglingEnd();
+
+    [GeneratedRegex(@"[.!?…][""'’”)\]*]*$")]
+    private static partial Regex EndsLikeSentence();
+
+    [GeneratedRegex(@"^\s*\n\*Figure[^\n]*\*[ \t]*(\n|$)")]
+    private static partial Regex CaptionLine();
 
     [GeneratedRegex(@"\s*—\s*")]
     private static partial Regex EmDash();

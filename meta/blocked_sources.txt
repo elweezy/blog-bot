@@ -1,0 +1,8 @@
+# Sources the bot must never write from. One URL (or URL prefix) per line; lines starting with # are ignored.
+# Separately, every source the bot writes from is put on a 30-day cooldown automatically.
+
+# DigUp / EmbeddingGemma 2 thread: picked for #53, #55, #60, #70 and #71, all closed.
+https://www.reddit.com/r/LocalLLaMA/comments/1x2eeds/
+# Jev / Flash-Lite articles: picked for #51 and #62, both closed.
+https://dev.to/theycallmeswift/i-got-jev-to-zero-mistakes-im-still-using-flash-lite-2mo7
+https://dev.to/nyaomaru/how-do-we-extract-the-why-from-a-pr-into-a-changelog-with-jev-52pk

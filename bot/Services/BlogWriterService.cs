@@ -79,7 +79,15 @@ public sealed class BlogWriterService
         var index = _blogRepo.BuildIndex(_blogRepo.LoadHistory());
         Console.WriteLine($"Indexed {index.Entries.Count} existing posts/history entries.");
 
+        var ledger = _blogRepo.LoadLedger();
         var candidates = await _discovery.GetCandidatesAsync(ct);
+
+        // Sources on cooldown or on the block list never reach the topic model, so it can't keep proposing them.
+        var available = candidates.Where(c => ledger.Unavailable(c.Url) is null && ledger.Unavailable(c.DiscussionUrl ?? "") is null).ToList();
+        foreach (var skipped in candidates.Except(available).Take(10))
+            Console.WriteLine($"  source skipped: {Truncate(skipped.Title, 80)} ({ledger.Unavailable(skipped.Url) ?? ledger.Unavailable(skipped.DiscussionUrl ?? "")})");
+        candidates = available;
+
         if (candidates.Count == 0)
         {
             Console.WriteLine("No topic candidates found. Exiting.");
@@ -114,6 +122,9 @@ public sealed class BlogWriterService
             Console.WriteLine("No new topic has enough source material. Skipping this run.");
             return null;
         }
+
+        // Record before writing, so the source cools down even if this run ends without a post.
+        ledger.Record(chosen.Sources.Take(3).SelectMany(s => new[] { s.Url, s.DiscussionUrl ?? "" }), chosen.Title);
 
         Console.WriteLine($"Chosen topic: {chosen.Title}");
         Console.WriteLine($"Angle:        {chosen.Angle}");
@@ -403,6 +414,12 @@ public sealed class BlogWriterService
                 continue;
 
             replacement = Citations.FixPlacement(replacement.Trim());
+            if (PostSanitizer.IsIncomplete(Citations.StripMarkers(replacement), requireFinalPunctuation: true))
+            {
+                Console.WriteLine($"  repair dropped (incomplete sentence): {Truncate(Citations.StripMarkers(replacement), 140)}");
+                continue;
+            }
+
             if (Citations.InvalidQuotes(replacement, sources.Texts).Count > 0)
             {
                 Console.WriteLine($"  repair dropped (its quote is not in the source): {Truncate(Citations.StripMarkers(replacement), 140)}");
@@ -505,7 +522,10 @@ public sealed class BlogWriterService
             Console.WriteLine($"  rewritten teaser rejected too: {Truncate(recheck[TeaserId], 200)}");
         }
 
-        return (FallbackTeaser(verified), "built from whole verified sentences");
+        // The page shows the teaser above the post, so avoid repeating the opening paragraph when there's an alternative.
+        var opening = Citations.StripMarkers(markdown.Split("\n\n").FirstOrDefault(p => !p.TrimStart().StartsWith('#')) ?? string.Empty);
+        var beyondOpening = verified.Where(v => !opening.Contains(v)).ToList();
+        return (FallbackTeaser(beyondOpening.Count >= 2 ? beyondOpening : verified), "built from whole verified sentences");
     }
 
     // Whole sentences only, as many as fit in 300 characters (at least one).

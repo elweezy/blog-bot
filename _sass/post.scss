@@ -59,17 +59,65 @@
   }
 }
 
-// Mermaid diagrams, drawn hand-sketched on faint graph paper.
+// Node colours, rounded boxes and pill-shaped edge labels, shared by figures and the full-screen viewer.
+@mixin diagram-palette {
+  // Flowchart nodes: five colours in rotation, so neighbouring steps are easy to tell apart.
+  @for $i from 1 through 5 {
+    .node:nth-of-type(5n + #{$i}) {
+      rect, polygon, circle, ellipse, path {
+        fill: var(--d#{$i}-fill) !important;
+        stroke: var(--d#{$i}-line) !important;
+        stroke-width: 1.5px !important;
+      }
+    }
+  }
+
+  .node rect {
+    rx: 10px;
+    ry: 10px;
+  }
+
+  .nodeLabel,
+  .label {
+    font-weight: 500;
+  }
+
+  .flowchart-link,
+  .edgePath path {
+    stroke-width: 1.6px !important;
+  }
+
+  .edgeLabel,
+  .edgeLabel p,
+  .edgeLabel span {
+    background: var(--surface) !important;
+    color: var(--muted) !important;
+    font-size: 0.8rem;
+    border-radius: 999px;
+    padding: 0 0.35rem;
+  }
+
+  // Sequence diagrams: actors in the first palette colour, notes in the accent tint.
+  rect.actor {
+    fill: var(--d1-fill) !important;
+    stroke: var(--d1-line) !important;
+    rx: 10px;
+  }
+}
+
+// Mermaid diagrams: a card on faint graph paper, nodes cycling through a soft palette, edge labels as pills.
 .diagram {
-  margin: 2rem 0;
-  padding: 1.25rem;
+  position: relative;
+  margin: 2.25rem 0;
+  padding: 2.5rem 1.25rem 1.25rem;
   border: 1px solid var(--border);
-  border-radius: $radius;
+  border-radius: 12px;
   background-color: var(--surface);
   background-image:
     linear-gradient(var(--grid) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 20px 20px;
+  background-size: 22px 22px;
+  box-shadow: 0 1px 2px rgba(15, 18, 23, 0.06), 0 8px 24px -12px rgba(15, 18, 23, 0.18);
   overflow-x: auto;
 
   pre.mermaid {
@@ -88,8 +136,10 @@
     height: auto;
   }
 
+  @include diagram-palette;
+
   figcaption {
-    margin-top: 0.9rem;
+    margin-top: 1rem;
     font-family: $font-ui;
     font-size: 0.85rem;
     line-height: 1.5;
@@ -100,6 +150,102 @@
       font-weight: 600;
     }
   }
+}
+
+.diagram-expand {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: $font-ui;
+  font-size: 0.75rem;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+.diagram-viewer {
+  width: min(96vw, 1200px);
+  max-height: 92vh;
+  padding: 2.5rem 1.25rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--fg);
+
+  &::backdrop {
+    background: rgba(10, 12, 16, 0.6);
+  }
+
+  .diagram-viewer-body {
+    @include diagram-palette;
+    overflow: auto;
+    max-height: calc(92vh - 4rem);
+
+    svg {
+      width: 100% !important;
+      max-width: none !important;
+      height: auto;
+      min-width: 640px;
+    }
+
+    figcaption {
+      margin-top: 0.8rem;
+      font-family: $font-ui;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  }
+
+  .diagram-viewer-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+}
+
+// The post opens with a "TL;DR" blockquote; later blockquotes are pull quotes.
+.post-content > blockquote:first-child {
+  margin: 0 0 2rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--d1-line);
+  border-left-width: 4px;
+  border-radius: 10px;
+  background: var(--d1-fill);
+  color: var(--fg);
+  font-family: $font-ui;
+  font-size: 0.98rem;
+
+  p:first-child {
+    margin-bottom: 0.4rem;
+  }
+
+  ul {
+    margin: 0;
+  }
+}
+
+.post-content > blockquote:not(:first-child) {
+  margin: 2.25rem 0;
+  padding: 0.2rem 0 0.2rem 1.25rem;
+  border-left: 4px solid var(--accent);
+  color: var(--fg);
+  font-size: 1.3rem;
+  line-height: 1.45;
+  font-style: italic;
 }
 
 .post-footer {

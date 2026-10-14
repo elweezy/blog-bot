@@ -66,3 +66,6 @@ _site/
 .jekyll-cache/
 .jekyll-metadata
 .sass-cache/
+
+# Bot state restored from the Actions cache (never committed)
+.cache/

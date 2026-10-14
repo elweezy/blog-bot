@@ -27,11 +27,16 @@ public sealed class TopicDiscoveryOptions
     public int DevToPerTag { get; set; } = 15;
 
     /// <summary>
-    /// Subreddits read through their public RSS feed (the JSON API blocks unauthenticated clients).
+    /// Subreddits read through their public RSS feed (the JSON API blocks unauthenticated clients), fetched as one
+    /// combined feed. r/MachineLearning was dropped: it was rate-limited on nearly every run and, when combined, its
+    /// posts never made the top of the feed. Research papers come from Hugging Face daily papers instead.
     /// </summary>
-    public List<string> Subreddits { get; set; } = ["LocalLLaMA", "MachineLearning"];
+    public List<string> Subreddits { get; set; } = ["LocalLLaMA"];
 
-    public int RedditLimit { get; set; } = 15;
+    /// <summary>
+    /// Top posts of the week across all subreddits combined (one request).
+    /// </summary>
+    public int RedditLimit { get; set; } = 25;
 
     public bool IncludeHuggingFacePapers { get; set; } = true;
 

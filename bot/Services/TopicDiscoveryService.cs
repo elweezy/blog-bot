@@ -248,22 +248,14 @@ public sealed partial class TopicDiscoveryService
 
     #region Reddit (RSS)
 
-    // One subreddit at a time: Reddit answers parallel feed requests with 429.
-    private async Task<List<TopicCandidate>> FetchAllRedditAsync(CancellationToken ct)
-    {
-        var all = new List<TopicCandidate>();
-        for (var i = 0; i < _options.Subreddits.Count; i++)
-        {
-            if (i > 0) await Task.Delay(TimeSpan.FromSeconds(3), ct);
-            all.AddRange(await FetchRedditAsync(_options.Subreddits[i], ct));
-        }
-
-        return all;
-    }
+    // All subreddits in one request ("r/A+B" is Reddit's combined feed): a second request per subreddit was
+    // answered with 429 on nearly every run.
+    private Task<List<TopicCandidate>> FetchAllRedditAsync(CancellationToken ct) =>
+        FetchRedditAsync(string.Join("+", _options.Subreddits.Select(s => Uri.EscapeDataString(s.Trim('/')))), ct);
 
     private async Task<List<TopicCandidate>> FetchRedditAsync(string subreddit, CancellationToken ct)
     {
-        var uri = $"https://www.reddit.com/r/{Uri.EscapeDataString(subreddit.Trim('/'))}/top/.rss" +
+        var uri = $"https://www.reddit.com/r/{subreddit}/top/.rss" +
                   $"?t=week&limit={_options.RedditLimit}";
 
         try

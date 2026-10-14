@@ -318,7 +318,7 @@ public sealed class BlogWriterService
         // returns is fact-checked again by both models. Anything that still fails is deleted.
         var proseById = claims.Concat(uncited).ToDictionary(c => c.Id);
         var repairable = proseById.Values.Where(c => rejected.ContainsKey(c.Id)).ToList();
-        var outcome = await RepairAsync(repairable, rejected, checks, allEvidence, sources, ct);
+        var outcome = await RepairAsync(repairable, rejected, checks, allEvidence, sources, markdown, ct);
 
         var deletedCited = claims.Count(c => outcome.TryGetValue(c.Id, out var r) && r.Length == 0);
         var deletedUncited = uncited.Count(c => outcome.TryGetValue(c.Id, out var r) && r.Length == 0);
@@ -371,15 +371,18 @@ public sealed class BlogWriterService
         List<ClaimCheck> originalChecks,
         List<string> allEvidence,
         SourceSet sources,
+        string markdown,
         CancellationToken ct)
     {
         var outcome = rejectedProse.ToDictionary(c => c.Id, _ => string.Empty);
+        var paragraphs = Citations.StripMarkers(markdown).Split("\n\n");
         if (rejectedProse.Count == 0) return outcome;
 
         var kinds = originalChecks.ToDictionary(c => c.Id, c => c.Kind);
         var requests = rejectedProse.Select(c => new RepairRequest(
             c.Id, kinds[c.Id], c.Text, reasons[c.Id],
-            c.Quotes.Count > 0 ? Evidence(c.Quotes, sources).Concat(allEvidence).Distinct().Take(40).ToList() : allEvidence)).ToList();
+            c.Quotes.Count > 0 ? Evidence(c.Quotes, sources).Concat(allEvidence).Distinct().Take(40).ToList() : allEvidence,
+            paragraphs.FirstOrDefault(p => p.Contains(c.Text.TrimStart('-', ' '))) ?? string.Empty)).ToList();
 
         Dictionary<int, string> replacements;
         try

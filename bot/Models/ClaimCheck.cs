@@ -13,4 +13,4 @@ public sealed class ClaimVerdict
 }
 
 /// <summary>A sentence the fact-checker rejected, sent back to the editor with the reason and the evidence.</summary>
-public sealed record RepairRequest(int Id, string Kind, string Text, string Reason, IReadOnlyList<string> Evidence);
+public sealed record RepairRequest(int Id, string Kind, string Text, string Reason, IReadOnlyList<string> Evidence, string Paragraph = "");

@@ -203,7 +203,7 @@ public sealed class GeminiClient : ILlmClient
 
         // Same 0..n-1 numbering as the fact-check, mapped back afterwards.
         var payload = JsonSerializer.Serialize(requests.Select((r, i) =>
-            new { id = i, kind = r.Kind, sentence = r.Text, rejected_because = r.Reason, evidence = r.Evidence }));
+            new { id = i, kind = r.Kind, sentence = r.Text, paragraph = r.Paragraph, rejected_because = r.Reason, evidence = r.Evidence }));
 
         return CallAsync("repair", Prompts.RepairSystem, Prompts.RepairUser(payload), schema, json =>
         {

@@ -149,7 +149,31 @@ public static partial class Citations
 
         // Drop list markers left empty and collapse the blank lines that removal leaves behind.
         var text = Regex.Replace(sb.ToString(), @"^[ \t]*([-*]|\d+\.)[ \t]*$\n?", "", RegexOptions.Multiline);
-        return Regex.Replace(text, @"\n{3,}", "\n\n").Trim() + "\n";
+        text = Regex.Replace(text, @"\n{3,}", "\n\n");
+        return TrimParagraphStarts(text).Trim() + "\n";
+    }
+
+    /// <summary>
+    /// Removing a paragraph's first sentence leaves the next one starting with a space. Trim that at paragraph
+    /// starts only; code, list items, tables and real indentation are left alone.
+    /// </summary>
+    private static string TrimParagraphStarts(string markdown)
+    {
+        var lines = markdown.Split('\n');
+        var inFence = false;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var trimmed = lines[i].TrimStart();
+            if (trimmed.StartsWith("```")) inFence = !inFence;
+            if (inFence) continue;
+
+            var startsParagraph = i == 0 || lines[i - 1].Trim().Length == 0;
+            var indent = lines[i].Length - trimmed.Length;
+            if (startsParagraph && indent is > 0 and < 4 && !ListItem().IsMatch(lines[i]) && !trimmed.StartsWith('|'))
+                lines[i] = trimmed;
+        }
+
+        return string.Join('\n', lines);
     }
 
     public static string Normalize(string text)

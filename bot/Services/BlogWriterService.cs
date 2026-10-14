@@ -83,9 +83,18 @@ public sealed class BlogWriterService
         var candidates = await _discovery.GetCandidatesAsync(ct);
 
         // Sources on cooldown or on the block list never reach the topic model, so it can't keep proposing them.
-        var available = candidates.Where(c => ledger.Unavailable(c.Url) is null && ledger.Unavailable(c.DiscussionUrl ?? "") is null).ToList();
-        foreach (var skipped in candidates.Except(available).Take(10))
-            Console.WriteLine($"  source skipped: {Truncate(skipped.Title, 80)} ({ledger.Unavailable(skipped.Url) ?? ledger.Unavailable(skipped.DiscussionUrl ?? "")})");
+        // Sources already used by a published post, an open PR or a recently closed PR are skipped too.
+        var usedSources = index.SourceUrls;
+        string? WhyUnavailable(TopicCandidate c) =>
+            ledger.Unavailable(c.Url) ?? ledger.Unavailable(c.DiscussionUrl ?? "") ??
+            (usedSources.Contains(PostIndex.NormalizeUrl(c.Url)) ||
+             (c.DiscussionUrl is not null && usedSources.Contains(PostIndex.NormalizeUrl(c.DiscussionUrl)))
+                ? "already used by a published post, an open PR or a recently closed PR"
+                : null);
+
+        var available = candidates.Where(c => WhyUnavailable(c) is null).ToList();
+        foreach (var skipped in candidates.Except(available))
+            Console.WriteLine($"  source skipped: {Truncate(skipped.Title, 80)} ({WhyUnavailable(skipped)})");
         candidates = available;
 
         if (candidates.Count == 0)

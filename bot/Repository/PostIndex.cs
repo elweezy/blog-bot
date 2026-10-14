@@ -41,13 +41,13 @@ public sealed class PostIndex
     }
 
     /// <summary>
-    /// PR mode: posts in open pull requests are not on main yet but must still count as used.
-    /// The workflow fetches the branch of every open PR into refs/remotes/pending/ before running the bot,
-    /// so closed PRs no longer block their topic.
+    /// Posts that never reached main still count as used: those in open pull requests (refs/remotes/pending/) and
+    /// those in post PRs closed without merging in the last 30 days (refs/remotes/closed/). The workflow fetches
+    /// both before running the bot. Closed PRs are durable memory: unlike the Actions cache, they don't expire.
     /// </summary>
     private void AddFromRemoteBranches(string repoRoot)
     {
-        var refs = Git(repoRoot, "for-each-ref", "--format=%(refname)", "refs/remotes/pending/");
+        var refs = Git(repoRoot, "for-each-ref", "--format=%(refname)", "refs/remotes/pending/", "refs/remotes/closed/");
         if (refs is null) return;
 
         foreach (var gitRef in refs.Split('\n', StringSplitOptions.RemoveEmptyEntries))

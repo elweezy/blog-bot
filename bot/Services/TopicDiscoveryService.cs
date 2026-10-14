@@ -60,7 +60,8 @@ public sealed partial class TopicDiscoveryService
     public static double Score(TopicCandidate c)
     {
         var ageDays = Math.Max(0, (DateTime.UtcNow - c.CreatedAt).TotalDays);
-        return c.Popularity * Math.Exp(-ageDays / 7.0);
+        // Strong preference for the newest discussions: a post loses about half its weight per day.
+        return c.Popularity * Math.Exp(-ageDays / 1.5);
     }
 
     /// <summary>
@@ -256,7 +257,7 @@ public sealed partial class TopicDiscoveryService
     private async Task<List<TopicCandidate>> FetchRedditAsync(string subreddit, CancellationToken ct)
     {
         var uri = $"https://www.reddit.com/r/{subreddit}/top/.rss" +
-                  $"?t=week&limit={_options.RedditLimit}";
+                  $"?t={_options.RedditTimeWindow}&limit={_options.RedditLimit}";
 
         try
         {

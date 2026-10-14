@@ -5,7 +5,7 @@ public sealed class TopicDiscoveryOptions
     /// <summary>
     /// Only consider items published within this many days.
     /// </summary>
-    public int LookbackDays { get; set; } = 7;
+    public int LookbackDays { get; set; } = 2;
 
     /// <summary>
     /// Hacker News (Algolia API) search queries; results are merged and de-duplicated.
@@ -34,7 +34,12 @@ public sealed class TopicDiscoveryOptions
     public List<string> Subreddits { get; set; } = ["LocalLLaMA"];
 
     /// <summary>
-    /// Top posts of the week across all subreddits combined (one request).
+    /// Reddit's ranking window for top posts: "day" keeps the feed fresh, so one viral thread doesn't win for a week.
+    /// </summary>
+    public string RedditTimeWindow { get; set; } = "day";
+
+    /// <summary>
+    /// Top posts across all subreddits combined (one request).
     /// </summary>
     public int RedditLimit { get; set; } = 25;
 

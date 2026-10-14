@@ -51,15 +51,6 @@ jobs:
           npm install -g @mermaid-js/mermaid-cli@12.0.0 puppeteer@25.13.0
           echo '{"args":["--no-sandbox"]}' > "$RUNNER_TEMP/puppeteer.json"
 
-      # Which sources the bot already wrote from (30-day cooldown) lives in the Actions cache, not in git,
-      # so runs that end without a PR still count. Each run restores the newest copy and saves its own.
-      - name: Restore source ledger
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: .cache
-          key: source-ledger-${{ github.run_id }}
-          restore-keys: source-ledger-
-
       - name: Run blog bot
         id: bot
         working-directory: bot
@@ -69,13 +60,6 @@ jobs:
           GEMINI_MODELS: ${{ vars.GEMINI_MODELS }}
           MERMAID_PUPPETEER_CONFIG: ${{ runner.temp }}/puppeteer.json
           REQUIRE_MERMAID_VALIDATION: "1"
-
-      - name: Save source ledger
-        if: always()
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: .cache
-          key: source-ledger-${{ github.run_id }}
 
       - name: Create Pull Request
         if: steps.bot.outputs.post_title != ''

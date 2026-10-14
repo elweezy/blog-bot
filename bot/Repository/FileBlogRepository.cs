@@ -27,14 +27,7 @@ public sealed class FileBlogRepository
 
     public PostIndex BuildIndex(TopicHistory history) => PostIndex.Build(RepoRoot, PostsDirectory, history);
 
-    /// <summary>
-    /// Sources already written from (restored from the Actions cache into .cache/) plus the hand-edited block list.
-    /// </summary>
-    public SourceLedger LoadLedger() => SourceLedger.Load(
-        Environment.GetEnvironmentVariable("SOURCE_LEDGER_PATH") is { Length: > 0 } path
-            ? path
-            : Path.Combine(RepoRoot, ".cache", "attempted_sources.json"),
-        Path.Combine(RepoRoot, "meta", "blocked_sources.txt"));
+    public BlockList LoadBlockList() => BlockList.Load(Path.Combine(RepoRoot, "meta", "blocked_sources.txt"));
 
     /// <summary>
     /// Returns the author profile without HTML comments (the template's instructions), or null if nothing is filled in.

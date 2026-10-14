@@ -151,6 +151,10 @@ public sealed partial class PostSanitizer
             var after = markdown[(diagrams[i].Index + diagrams[i].Length)..];
             if (!CaptionLine().IsMatch(after))
                 issues.Add(new Issue($"Diagram {i + 1} has no caption. Add one italic line under it starting with \"*Figure:\".", Blocking: true));
+
+            var body = diagrams[i].Groups[1].Value;
+            if (body.TrimStart().StartsWith("flowchart") && UnlabelledArrow().IsMatch(body))
+                issues.Add(new Issue($"Diagram {i + 1} has arrows without labels. Label every arrow with what flows along it: A -->|query text| B.", Blocking: false));
         }
 
         if (!DraftDesignHeading().IsMatch(markdown))
@@ -180,7 +184,8 @@ public sealed partial class PostSanitizer
             s.StartsWith('>') || char.IsDigit(s[0]) || s.EndsWith(':'))
             return false;
 
-        return DanglingEnd().IsMatch(s) || (requireFinalPunctuation && !EndsLikeSentence().IsMatch(s));
+        return DanglingEnd().IsMatch(s) || DanglingPunctuation().IsMatch(s) ||
+               (requireFinalPunctuation && !EndsLikeSentence().IsMatch(s));
     }
 
     public static IReadOnlyList<string> BannedPhraseLabels => BannedPhrases.Select(b => b.Label).ToList();
@@ -262,6 +267,7 @@ public sealed partial class PostSanitizer
             "hours" or "hour" => "h",
             "×" => "x",
             "cent" or "cents" => "cents",
+            "w" or "watt" or "watts" => "w",
             "dollar" or "dollars" => "$",
             _ when unit.StartsWith("times") => "x",
             _ => unit.TrimEnd('s')
@@ -364,7 +370,7 @@ public sealed partial class PostSanitizer
 
     // A figure with a unit or currency, optionally as a range: "$0.30", "2 to 5 seconds", "200-400 ms", "96.9%", "10x",
     // or a count of things ("100,000 vectors", "250k items", "16 sessions").
-    [GeneratedRegex(@"(\$\s?\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\$?\d[\d,]*(\.\d+)?)?(\s?(million|billion|k|m|bn)\b)?)|(\b\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\d[\d,]*(\.\d+)?)?([kmb](?=\s))?\s?(%|percent\b|ms\b|milliseconds?\b|seconds?\b|secs?\b|minutes?\b|hours?\b|x\b|×|times (faster|cheaper|slower|more|less)|million\b|billion\b|[kmb] tokens\b|tokens\b|requests\b|rps\b|qps\b|gb\b|mb\b|kb\b|tb\b|s\b|fps\b|-d\b|cents?\b|dollars?\b|items?\b|files?\b|chunks?\b|vectors?\b|quer(y|ies)\b|documents?\b|pages?\b|users?\b|sessions?\b|records?\b|rows?\b|embeddings?\b|parameters\b|params\b|calls\b|gpus?\b))", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(\$\s?\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\$?\d[\d,]*(\.\d+)?)?(\s?(million|billion|k|m|bn)\b)?)|(\b\d[\d,]*(\.\d+)?(\s?(to|-|–)\s?\d[\d,]*(\.\d+)?)?([kmb](?=\s))?\s?(%|percent\b|ms\b|milliseconds?\b|seconds?\b|secs?\b|minutes?\b|hours?\b|x\b|×|times (faster|cheaper|slower|more|less)|million\b|billion\b|[kmb] tokens\b|tokens\b|requests\b|rps\b|qps\b|gb\b|mb\b|kb\b|tb\b|s\b|fps\b|-d\b|w\b|watts?\b|kw\b|cents?\b|dollars?\b|items?\b|files?\b|chunks?\b|vectors?\b|quer(y|ies)\b|documents?\b|pages?\b|users?\b|sessions?\b|records?\b|rows?\b|embeddings?\b|parameters\b|params\b|calls\b|gpus?\b))", RegexOptions.IgnoreCase)]
     private static partial Regex MetricClaim();
 
     [GeneratedRegex(@"\d[\d,]*(\.\d+)?")]
@@ -400,6 +406,14 @@ public sealed partial class PostSanitizer
 
     [GeneratedRegex(@"[.!?…][""'’”)\]*]*$")]
     private static partial Regex EndsLikeSentence();
+
+    // "..., noting,." or "...: ." - a clause was cut off before the final period.
+    [GeneratedRegex(@"[,;:]\s*[.!?][""'’”)\]]*$")]
+    private static partial Regex DanglingPunctuation();
+
+    // A flowchart arrow with no |label| on the line: "A --> B" rather than "A -->|query text| B".
+    [GeneratedRegex(@"^(?!.*\|).*(-->|---|-\.->|==>).*$", RegexOptions.Multiline)]
+    private static partial Regex UnlabelledArrow();
 
     [GeneratedRegex(@"^\s*\n\*Figure[^\n]*\*[ \t]*(\n|$)")]
     private static partial Regex CaptionLine();

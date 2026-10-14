@@ -79,13 +79,22 @@ public sealed class BlogWriterService
         var index = _blogRepo.BuildIndex(_blogRepo.LoadHistory());
         Console.WriteLine($"Indexed {index.Entries.Count} existing posts/history entries.");
 
-        var ledger = _blogRepo.LoadLedger();
+        var blockList = _blogRepo.LoadBlockList();
         var candidates = await _discovery.GetCandidatesAsync(ct);
 
-        // Sources on cooldown or on the block list never reach the topic model, so it can't keep proposing them.
-        var available = candidates.Where(c => ledger.Unavailable(c.Url) is null && ledger.Unavailable(c.DiscussionUrl ?? "") is null).ToList();
-        foreach (var skipped in candidates.Except(available).Take(10))
-            Console.WriteLine($"  source skipped: {Truncate(skipped.Title, 80)} ({ledger.Unavailable(skipped.Url) ?? ledger.Unavailable(skipped.DiscussionUrl ?? "")})");
+        // A source already behind a published post or an open PR would produce a duplicate; block-listed sources are
+        // excluded by hand. Neither reaches the topic model.
+        var usedSources = index.SourceUrls;
+        string? WhyUnavailable(TopicCandidate c) =>
+            blockList.Blocks(c.Url) || blockList.Blocks(c.DiscussionUrl) ? "on the block list"
+            : usedSources.Contains(PostIndex.NormalizeUrl(c.Url)) ||
+              (c.DiscussionUrl is not null && usedSources.Contains(PostIndex.NormalizeUrl(c.DiscussionUrl)))
+                ? "already used by a published post or an open PR"
+                : null;
+
+        var available = candidates.Where(c => WhyUnavailable(c) is null).ToList();
+        foreach (var skipped in candidates.Except(available))
+            Console.WriteLine($"  source skipped: {Truncate(skipped.Title, 80)} ({WhyUnavailable(skipped)})");
         candidates = available;
 
         if (candidates.Count == 0)
@@ -122,9 +131,6 @@ public sealed class BlogWriterService
             Console.WriteLine("No new topic has enough source material. Skipping this run.");
             return null;
         }
-
-        // Record before writing, so the source cools down even if this run ends without a post.
-        ledger.Record(chosen.Sources.Take(3).SelectMany(s => new[] { s.Url, s.DiscussionUrl ?? "" }), chosen.Title);
 
         Console.WriteLine($"Chosen topic: {chosen.Title}");
         Console.WriteLine($"Angle:        {chosen.Angle}");

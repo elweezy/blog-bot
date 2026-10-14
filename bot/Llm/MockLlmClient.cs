@@ -34,11 +34,13 @@ public sealed class MockLlmClient : ILlmClient
     public Task<string> WriteDraftAsync(Topic topic, string sourceMaterial, string? authorProfile, CancellationToken ct = default)
     {
         // Quote real sentences from source 1 so the citation checks have something genuine to verify.
+        // Source 1's body only: the "[S1] source: title" header line isn't part of the source text.
         var source1 = sourceMaterial.Split("[S2]")[0];
-        var quotes = System.Text.RegularExpressions.Regex.Split(source1, @"(?<=[.!?])\s+")
+        var body = source1.Contains('\n') ? source1[(source1.IndexOf('\n') + 1)..] : source1;
+        var quotes = System.Text.RegularExpressions.Regex.Split(body, @"(?<=[.!?])\s+|\n+")
             .Select(q => q.Trim())
-            .Where(q => q.Length is > 40 and < 220 && !q.Contains('"') && !q.Contains('['))
-            .Take(7)
+            .Where(q => q.Length is > 30 and < 260 && !q.Contains('"') && !q.Contains('[') && !q.StartsWith('-'))
+            .Take(8)
             .ToList();
         var cited = string.Join(" ", quotes.Select((q, i) => $"Point {i + 1} from the source [[S1: \"{q.TrimEnd('.', '!', '?')}\"]]."));
 

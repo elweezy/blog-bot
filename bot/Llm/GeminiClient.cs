@@ -11,10 +11,20 @@ namespace BlogBot.Llm;
 /// Google Gemini API client (free tier). Tries each model in GEMINI_MODELS in order, so a quota hit or a retired
 /// model falls through to the next one instead of failing the run.
 /// </summary>
-public sealed class GeminiClient : ILlmClient
+public sealed partial class GeminiClient : ILlmClient
 {
     private const string DefaultModels = "gemini-3.8-flash,gemini-3.6-flash,gemini-2.5-flash";
     private const int MaxAttemptsPerModel = 3;
+
+    // Free-tier safety. Limits are per project and shown in the AI Studio rate-limit dashboard; gemini-3.8-flash
+    // allows 5 requests a minute. So: one call at a time, at least GEMINI_MIN_SECONDS_BETWEEN_CALLS apart (default
+    // 13 s, about 4.6 a minute), and at most GEMINI_MAX_CALLS_PER_RUN calls per run (default 30; a post needs
+    // about 10-16).
+    private static readonly SemaphoreSlim CallGate = new(1, 1);
+    private static DateTime _lastCallUtc = DateTime.MinValue;
+    private static int _callsThisRun;
+    private static readonly TimeSpan MinGap = TimeSpan.FromSeconds(EnvInt("GEMINI_MIN_SECONDS_BETWEEN_CALLS", 13));
+    private static readonly int MaxCallsPerRun = EnvInt("GEMINI_MAX_CALLS_PER_RUN", 30);
 
     private readonly HttpClient _httpClient;
     private readonly string[] _models;
@@ -280,8 +290,33 @@ public sealed class GeminiClient : ILlmClient
         try
         {
             using var content = new StringContent(payload, Encoding.UTF8, "application/json");
-            using var resp = await _httpClient.PostAsync($"v1beta/models/{model}:generateContent", content, ct);
+            using var resp = await PacedPostAsync(model, content, ct);
             var raw = await resp.Content.ReadAsStringAsync(ct);
+
+            // 402: the project has no usable billing (e.g. prepay credits at $0). That applies to every model, so stop
+            // the run right away with an explanation instead of retrying each model.
+            if (resp.StatusCode == HttpStatusCode.PaymentRequired)
+                throw new GeminiBillingException(
+                    "Gemini API billing problem (HTTP 402): " + Truncate(raw, 300) + "\n" +
+                    "The API key's Google project is linked to a billing account without credits. To use the free " +
+                    "tier, disable billing on that project (console.cloud.google.com/billing/projects) or create the " +
+                    "key in a project with no billing, then update the GEMINI_API_KEY secret.");
+
+            if (resp.StatusCode == HttpStatusCode.TooManyRequests)
+            {
+                // Daily free quota: nothing will succeed until it resets, so stop the run with an explanation.
+                if (DailyQuota().IsMatch(raw))
+                    throw new GeminiQuotaException(
+                        $"Gemini free-tier daily quota reached for {model}: {Truncate(raw, 300)}\n" +
+                        "Daily limits reset at midnight Pacific time; the next run will work again.");
+
+                // Per-minute limit: wait as long as Google asks (capped), then let the retry loop try again.
+                var wait = RetryDelay().Match(raw) is { Success: true } m ? TimeSpan.FromSeconds(double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)) : TimeSpan.FromSeconds(30);
+                if (wait > TimeSpan.FromSeconds(90)) wait = TimeSpan.FromSeconds(90);
+                Console.WriteLine($"  Gemini rate limit on {model}; waiting {wait.TotalSeconds:0} s as requested.");
+                await Task.Delay(wait, ct);
+                return (default, $"429 rate limited (waited {wait.TotalSeconds:0} s)", false);
+            }
 
             if (!resp.IsSuccessStatusCode)
             {
@@ -304,6 +339,37 @@ public sealed class GeminiClient : ILlmClient
             return (default, $"{ex.GetType().Name}: {ex.Message}", false);
         }
     }
+
+    /// <summary>
+    /// Sends one request while enforcing the free-tier safety limits: one call at a time, a minimum gap between
+    /// calls, and a hard cap on calls per run.
+    /// </summary>
+    private async Task<HttpResponseMessage> PacedPostAsync(string model, HttpContent content, CancellationToken ct)
+    {
+        await CallGate.WaitAsync(ct);
+        try
+        {
+            if (++_callsThisRun > MaxCallsPerRun)
+                throw new GeminiQuotaException(
+                    $"Stopping: this run reached its budget of {MaxCallsPerRun} Gemini calls (GEMINI_MAX_CALLS_PER_RUN), " +
+                    "set to stay well inside the free tier. Nothing is published from an unfinished run.");
+
+            var sinceLast = DateTime.UtcNow - _lastCallUtc;
+            if (sinceLast < MinGap)
+                await Task.Delay(MinGap - sinceLast, ct);
+
+            var response = await _httpClient.PostAsync($"v1beta/models/{model}:generateContent", content, ct);
+            _lastCallUtc = DateTime.UtcNow;
+            return response;
+        }
+        finally
+        {
+            CallGate.Release();
+        }
+    }
+
+    private static int EnvInt(string name, int fallback) =>
+        int.TryParse(Environment.GetEnvironmentVariable(name), out var value) && value > 0 ? value : fallback;
 
     private static (string? Text, string? FinishReason) ExtractText(string raw)
     {
@@ -332,6 +398,14 @@ public sealed class GeminiClient : ILlmClient
 
     private static string Truncate(string s, int max) => s.Length <= max ? s : s[..max] + "…";
 
+    // Gemini reports which quota was hit; per-day quotas have "PerDay" in their id.
+    [System.Text.RegularExpressions.GeneratedRegex(@"PerDay|per day", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex DailyQuota();
+
+    // "retryDelay": "23s" in the error details.
+    [System.Text.RegularExpressions.GeneratedRegex(@"""retryDelay""\s*:\s*""(\d+(?:\.\d+)?)s""")]
+    private static partial System.Text.RegularExpressions.Regex RetryDelay();
+
     private sealed class TopicProposal
     {
         public string Title { get; set; } = string.Empty;
@@ -340,3 +414,15 @@ public sealed class GeminiClient : ILlmClient
         public List<int> SourceIndexes { get; set; } = new();
     }
 }
+
+/// <summary>
+/// The Gemini project can't be billed (HTTP 402). Deliberately not an InvalidOperationException, so the model and
+/// fact-checker fallbacks don't swallow it: no other model can succeed either.
+/// </summary>
+public sealed class GeminiBillingException(string message) : Exception(message);
+
+/// <summary>
+/// A free-tier limit was reached (daily quota, or the bot's own per-run call budget). Like billing errors, this stops
+/// the run instead of being retried by the model fallbacks.
+/// </summary>
+public sealed class GeminiQuotaException(string message) : Exception(message);

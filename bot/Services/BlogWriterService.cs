@@ -43,11 +43,12 @@ public sealed class BlogWriterService
     private readonly bool _requireMermaidValidation = Environment.GetEnvironmentVariable("REQUIRE_MERMAID_VALIDATION") == "1";
 
     // Two independent fact-checkers; a claim survives only if both accept it. Each checker has a fallback list
-    // (checkers separated by ';', fallbacks by ','), and the two never use the same model.
+    // (checkers separated by ';', fallbacks by ','), and the two never use the same model. Defaults are the newest
+    // free-tier models: 3.8-flash and 3.6-flash, both falling back to 2.5-flash.
     private readonly string[][] _verifierSlots =
         (Environment.GetEnvironmentVariable("GEMINI_VERIFIER_MODELS") is { Length: > 0 } v
             ? v
-            : "gemini-3.8-flash,gemini-3.6-flash;gemini-2.5-flash,gemini-3.6-flash")
+            : "gemini-3.8-flash,gemini-2.5-flash;gemini-3.6-flash,gemini-2.5-flash")
         .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
         .Select(slot => slot.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         .ToArray();

@@ -66,7 +66,18 @@ Console.CancelKeyPress += (_, e) =>
 };
 
 var blogWriter = host.Services.GetRequiredService<BlogWriterService>();
-var result = await blogWriter.RunAsync(cts.Token);
+(BlogBot.Models.Topic Topic, BlogBot.Models.GeneratedPost Post, string? Path)? result;
+try
+{
+    result = await blogWriter.RunAsync(cts.Token);
+}
+catch (Exception ex) when (ex is GeminiBillingException or GeminiQuotaException)
+{
+    // Account or free-tier limits, not a bug: print the explanation without a stack trace and fail the run.
+    Console.Error.WriteLine(ex.Message);
+    Environment.Exit(1);
+    return;
+}
 
 // Hand the title and LinkedIn description to the workflow for the PR.
 var githubOutput = Environment.GetEnvironmentVariable("GITHUB_OUTPUT");

@@ -26,6 +26,9 @@ public sealed partial class GeminiClient : ILlmClient
     private static readonly TimeSpan MinGap = TimeSpan.FromSeconds(EnvInt("GEMINI_MIN_SECONDS_BETWEEN_CALLS", 13));
     private static readonly int MaxCallsPerRun = EnvInt("GEMINI_MAX_CALLS_PER_RUN", 30);
 
+    // Daily free quotas are counted per model: once a model's is used up, the rest of the run uses the others.
+    private static readonly HashSet<string> ExhaustedModels = new();
+
     private readonly HttpClient _httpClient;
     private readonly string[] _models;
 
@@ -261,8 +264,15 @@ public sealed partial class GeminiClient : ILlmClient
         var payload = JsonSerializer.Serialize(body, JsonOptions);
 
         var failures = new List<string>();
-        foreach (var model in models ?? _models)
+        var candidates = models ?? _models;
+        foreach (var model in candidates)
         {
+            if (ExhaustedModels.Contains(model))
+            {
+                failures.Add($"{model}: daily free quota already used up in this run");
+                continue;
+            }
+
             for (var attempt = 1; attempt <= MaxAttemptsPerModel; attempt++)
             {
                 var (result, failure, tryNextModel) = await TryCallAsync(model, payload, parse, ct);
@@ -281,6 +291,13 @@ public sealed partial class GeminiClient : ILlmClient
             }
         }
 
+        // Every model in the default chain is out of daily quota: nothing can succeed until the reset.
+        if (models is null && candidates.All(ExhaustedModels.Contains))
+            throw new GeminiQuotaException(
+                $"Gemini free-tier daily quota reached for every model ({string.Join(", ", candidates)}). " +
+                "Daily limits reset at midnight Pacific time; the next run will work again.");
+
+        // A single named model (a fact-checker slot) failing is an ordinary failure: the caller falls back.
         throw new InvalidOperationException("All Gemini models failed:\n" + string.Join("\n", failures));
     }
 
@@ -304,11 +321,13 @@ public sealed partial class GeminiClient : ILlmClient
 
             if (resp.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                // Daily free quota: nothing will succeed until it resets, so stop the run with an explanation.
+                // Daily free quota for this model: skip it for the rest of the run and use the next model.
                 if (DailyQuota().IsMatch(raw))
-                    throw new GeminiQuotaException(
-                        $"Gemini free-tier daily quota reached for {model}: {Truncate(raw, 300)}\n" +
-                        "Daily limits reset at midnight Pacific time; the next run will work again.");
+                {
+                    ExhaustedModels.Add(model);
+                    Console.WriteLine($"  {model} has used its daily free quota (resets at midnight Pacific); switching models.");
+                    return (default, "daily free quota reached", true);
+                }
 
                 // Per-minute limit: wait as long as Google asks (capped), then let the retry loop try again.
                 var wait = RetryDelay().Match(raw) is { Success: true } m ? TimeSpan.FromSeconds(double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture)) : TimeSpan.FromSeconds(30);

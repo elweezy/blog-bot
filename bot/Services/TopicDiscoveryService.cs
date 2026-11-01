@@ -203,6 +203,9 @@ public sealed partial class TopicDiscoveryService
 
         foreach (var tag in _options.DevToTags)
         {
+            // Back-to-back tag requests get a 429 from Dev.to; space them out a little.
+            if (tag != _options.DevToTags[0]) await Task.Delay(TimeSpan.FromSeconds(1.5), ct);
+
             var uri = "https://dev.to/api/articles" +
                       $"?tag={Uri.EscapeDataString(tag)}" +
                       $"&top={_options.LookbackDays}" +

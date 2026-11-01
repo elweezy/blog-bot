@@ -30,8 +30,9 @@ if (Environment.GetEnvironmentVariable("USE_MOCK_LLM") == "1")
 }
 else
 {
-    // Thinking models can take a while on long posts.
-    builder.Services.AddHttpClient<ILlmClient, GeminiClient>(client => client.Timeout = TimeSpan.FromMinutes(5));
+    // A healthy model answers well within this; a call that takes longer is usually stuck on an overloaded model,
+    // and the client then moves to the next model.
+    builder.Services.AddHttpClient<ILlmClient, GeminiClient>(client => client.Timeout = TimeSpan.FromMinutes(3));
 }
 
 // 4. FileBlogRepository: the bot runs from /bot, so the repo root is its parent

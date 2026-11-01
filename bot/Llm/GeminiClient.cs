@@ -16,14 +16,14 @@ public sealed partial class GeminiClient : ILlmClient
     private const string DefaultModels = "gemini-3.8-flash,gemini-3.6-flash,gemini-2.5-flash";
     private const int MaxAttemptsPerModel = 3;
 
-    // Free-tier safety. Google doesn't publish exact free limits (they're per project, shown in the AI Studio
-    // rate-limit dashboard), so the bot stays well below typical values: one call at a time, at least
-    // GEMINI_MIN_SECONDS_BETWEEN_CALLS apart (default 6 s, i.e. under 10 requests a minute), and at most
-    // GEMINI_MAX_CALLS_PER_RUN calls per run (default 30; a normal post needs about 10-16).
+    // Free-tier safety. Limits are per project and shown in the AI Studio rate-limit dashboard; gemini-3.8-flash
+    // allows 5 requests a minute. So: one call at a time, at least GEMINI_MIN_SECONDS_BETWEEN_CALLS apart (default
+    // 13 s, about 4.6 a minute), and at most GEMINI_MAX_CALLS_PER_RUN calls per run (default 30; a post needs
+    // about 10-16).
     private static readonly SemaphoreSlim CallGate = new(1, 1);
     private static DateTime _lastCallUtc = DateTime.MinValue;
     private static int _callsThisRun;
-    private static readonly TimeSpan MinGap = TimeSpan.FromSeconds(EnvInt("GEMINI_MIN_SECONDS_BETWEEN_CALLS", 6));
+    private static readonly TimeSpan MinGap = TimeSpan.FromSeconds(EnvInt("GEMINI_MIN_SECONDS_BETWEEN_CALLS", 13));
     private static readonly int MaxCallsPerRun = EnvInt("GEMINI_MAX_CALLS_PER_RUN", 30);
 
     private readonly HttpClient _httpClient;

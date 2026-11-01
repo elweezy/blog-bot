@@ -118,6 +118,9 @@ public static class Prompts
         [[S1: "exact words copied from source 1"]]
         - S1, S2, S3 are the source labels in the source material. The quoted words must be copied character for
           character from that source: at least a few words, ideally the whole sentence that supports the claim.
+        - The marker is deleted before publishing, so the sentence must say everything on its own. Never let the
+          quote finish your sentence: write "Five 27B models beat Fable 5 on LiveCodeBench Hard [[S1: "beats Fable 5
+          on LiveCodeBench Hard"]].", never "Five 27B models [[S1: "beat Fable 5 on LiveCodeBench Hard"]].".
         - One quote per marker. Put the marker right before the sentence's final punctuation. For two quotes, use two
           markers: [[S1: "first passage"]] [[S1: "second passage"]].
         - Cite facts, figures, quotes, and descriptions of how someone's project works. Don't cite your own opinions
@@ -317,6 +320,11 @@ public static class Prompts
           diagram as the writer's own sketch or proposal.
         - "teaser": the post summary. Every factual statement in it must be supported.
 
+        Completeness: the text is shown exactly as readers will see it. For "sentence", "uncited" and "teaser" items
+        (table rows excepted), it must read as complete, grammatical sentences or questions. A fragment such as "A team
+        of 5 Qwen 27B models." (no verb) or a garbled question is NOT supported; give "incomplete sentence" as the
+        reason.
+
         Return one verdict for every id, with a one-sentence reason that names the unsupported part.
         """;
 
@@ -337,7 +345,8 @@ public static class Prompts
            is to fold the point into it or delete it. Drop any factual "because" clause the evidence doesn't support.
         3. Return an empty string to delete it, when neither works.
         Never add facts that aren't in the evidence. Keep the sentence's role in the paragraph (same subject, similar
-        length). For table rows, return the whole row with the same number of columns.
+        length). The marker is deleted before publishing: the replacement must be a complete sentence (or question)
+        without it, never one that the quote finishes. For table rows, return the whole row with the same number of columns.
         """;
 
     public static string RepairUser(string itemsJson) => $"""

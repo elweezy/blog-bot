@@ -401,7 +401,8 @@ public sealed partial class PostSanitizer
     private static partial Regex HtmlTag();
 
     // Words that can't end a sentence; "for that.", "anything but.", "..., though." and "ever since." are fine, so those aren't listed.
-    [GeneratedRegex(@"\b(even if|while|because|although|and|or|unless|whereas)\s*[.!?][""'’”)\]]*$", RegexOptions.IgnoreCase)]
+    // Also function words left behind when a citation quote carried the end of the sentence ("...cost just.").
+    [GeneratedRegex(@"\b(even if|while|because|although|and|or|unless|whereas|just|really|the|a|an|very|than|such)\s*[.!?][""'’”)\]]*$", RegexOptions.IgnoreCase)]
     private static partial Regex DanglingEnd();
 
     [GeneratedRegex(@"[.!?…][""'’”)\]*]*$")]

@@ -321,7 +321,10 @@ public sealed partial class GeminiClient : ILlmClient
             if (!resp.IsSuccessStatusCode)
             {
                 // Unknown model or a request this model rejects: retrying won't help.
-                var permanent = resp.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest or HttpStatusCode.Forbidden;
+                // 503 means the model is overloaded right now: on the free tier that tends to last, so switch to the
+                // next model instead of retrying the same one.
+                var permanent = resp.StatusCode is HttpStatusCode.NotFound or HttpStatusCode.BadRequest
+                    or HttpStatusCode.Forbidden or HttpStatusCode.ServiceUnavailable;
                 return (default, $"{(int)resp.StatusCode} {Truncate(raw, 300)}", permanent);
             }
 
@@ -333,8 +336,12 @@ public sealed partial class GeminiClient : ILlmClient
 
             return (parse(text), null, false);
         }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException
-                                       || (ex is TaskCanceledException && !ct.IsCancellationRequested))
+        catch (TaskCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            // The call hung until the HTTP timeout: an overloaded model, so move on to the next one.
+            return (default, $"timed out ({ex.Message})", true);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException)
         {
             return (default, $"{ex.GetType().Name}: {ex.Message}", false);
         }

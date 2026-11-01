@@ -245,7 +245,8 @@ public sealed class BlogWriterService
         for (var i = 0; i < picked.Count; i++)
         {
             var label = i + 1;
-            byLabel[label] = texts[i];
+            // The title is part of the source, so quoting it is valid.
+            byLabel[label] = $"{picked[i].Title}\n{texts[i]}";
             links[label] = (picked[i].Title, picked[i].Url);
             sb.AppendLine($"[S{label}] {picked[i].Source}: {picked[i].Title}");
             sb.AppendLine(texts[i]);
